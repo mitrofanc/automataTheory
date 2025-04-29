@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SonarLintProjectSettings">
+    <option name="moduleMapping">
+      <map>
+        <entry key="lab1at" value="Lab1at" />
+        <entry key="lab1at.main" value="Lab1AT.main" />
+        <entry key="lab1at.test" value="Lab1AT.test" />
+      </map>
+    </option>
+  </component>
+</project>

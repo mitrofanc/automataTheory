@@ -1,0 +1,56 @@
+// -*- tab-width: 4; -*-
+%class AppClass
+%package lab1at.recognizer.smc
+%start Map1::Start
+%map Map1
+%%
+    // State		Transition		End State		Action(s)
+    Start {
+        Move(str: String) [ctxt.isType(str)]    FuncNameState    { noMoreParamsNeeded(); }
+        Move(str: String) [ctxt.isString(str)]    Error    {}
+    }
+
+    FuncNameState {
+        Move(str: String) [ctxt.isName(str)]    OpenParamsListState    { setFuncName(str); }
+        Move(str: String) [ctxt.isString(str)]    Error {}
+    }
+
+    OpenParamsListState {
+        Move(str: String) ["(".equals(str)]    ParamTypeState {}
+        Move(str: String) [ctxt.isString(str)]    Error    {}
+    }
+
+    ParamTypeState {
+        Move(str: String) [ctxt.isType(str)]    ParamNameState    {}
+        Move(str: String) ["(".equals(str) && ctxt.getMoreParamsNeed()]    Error {}
+        Move(str: String) [")".equals(str) && !ctxt.getMoreParamsNeed()]    SemicolonState    {}
+        Move(str: String) [ctxt.isString(str)]    Error    {}
+    }
+
+    ParamNameState {
+        Move(str: String) [ctxt.isName(str)]    NextParamState    {}
+        Move(str: String) [ctxt.isString(str)]    Error    {}
+    }
+
+    NextParamState {
+        Move(str: String) [")".equals(str)]    SemicolonState    {}
+        Move(str: String) [",".equals(str)]    ParamTypeState    { moreParamsNeeded(); }
+        Move(str: String) [ctxt.isString(str)]    Error    {}
+    }
+
+    SemicolonState {
+        Move(str: String) [";".equals(str)]    OK    {}
+        Move(str: String) [ctxt.isString(str)]    Error    {}
+    }
+
+    OK {
+        EOS    nil    { acceptable(); }
+        Move(str: String) [ctxt.isString(str)]    OK    {}
+    }
+
+    Error {
+        EOS    nil				{ unacceptable(); }
+        Move(str: String) [ctxt.isString(str)]    Error    {}
+    }
+
+%%

@@ -1,0 +1,67 @@
+plugins {
+    id 'java'
+}
+
+group = 'lab1at'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.projectlombok:lombok:1.18.26'
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    implementation 'de.jflex:jflex:1.8.2'
+
+    implementation 'org.knowm.xchart:xchart:3.8.1'
+}
+
+configurations {
+    smc
+}
+
+dependencies {
+    implementation files('libs/Smc.jar')
+
+    smc files('libs/Smc.jar')
+}
+
+task generateStateMachine(type: JavaExec) {
+    group = "build"
+    description = "Generate Java classes from .sm files via SMC"
+
+    classpath = configurations.smc
+
+    main = 'net.sf.smc.Smc'
+
+    args = [
+            '-java',
+            '-d', file('src/main/java/lab1at/recognizer/smc'),
+            file('src/main/java/lab1at/recognizer/smc/StateMap.sm')
+    ]
+}
+
+compileJava.dependsOn generateStateMachine
+
+
+task generateLexer(type: JavaExec) {
+    group = 'build'
+    description = 'Generate Lexer from JFlex specification'
+
+    classpath = configurations.compileClasspath
+    main = 'jflex.Main'
+
+    args = [
+            file('src/main/java/lab1at/recognizer/flex/Lexer.jflex') // Путь к файлу JFlex
+    ]
+}
+
+compileJava.dependsOn generateLexer 
+
+test {
+    useJUnitPlatform()
+}
