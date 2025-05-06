@@ -1,0 +1,39 @@
+package lab2at.ast;
+
+import java.util.Objects;
+
+public class Node {
+    public final NodeType type;
+    public String text;    // для LITERAL, GROUP_DEF (имя), REPEAT (число)
+    public Node left, right;
+
+    public Node(NodeType type, String text) {
+        this.type = Objects.requireNonNull(type);
+        this.text = text;
+    }
+
+    public Node(NodeType type, Node left, Node right) {
+        this(type, null);
+        this.left = left;
+        this.right = right;
+    }
+
+    public Node(NodeType type, String text, Node left, Node right) {
+        this(type, text);
+        this.left = left;
+        this.right = right;
+    }
+
+    @Override
+    public String toString() {
+        // Для отладки выводим in-order
+        String label = text == null ? type.name() : type.name() + ":" + text;
+        if (left == null && right == null) {
+            return label;
+        }
+        return "(" + label + " "
+                + (left  == null ? "_" : left.toString()) + " "
+                + (right == null ? "_" : right.toString()) + ")";
+    }
+}
+
