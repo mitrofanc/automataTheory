@@ -15,8 +15,8 @@ public class Main {
     public static void main(String[] args) throws Exception {
         String pattern = "(a|bc)*d";
 
-        Lexer lex    = new Lexer(pattern);
-        Node  tree   = new RegexParser(lex.scan()).parse();
+        Lexer lex = new Lexer(pattern);
+        Node  tree = new RegexParser(lex.scan()).parse();
 
         Node eof = new Node(NodeType.LITERAL, "#");
         tree = new Node(NodeType.CONCAT, tree, eof);
@@ -25,7 +25,7 @@ public class Main {
         analyzer.analyze(tree);
         GraphVizRenderer.renderAst(tree, "ast.png");
 
-        DFABuilder b   = new DFABuilder(tree, analyzer.follow);
+        DFABuilder b = new DFABuilder(tree, analyzer.follow);
         List<DFAState> dfa = b.build();
 
         GraphVizRenderer.renderDfa(dfa, "dfa.png");
