@@ -4,7 +4,7 @@ public enum NodeType {
     LITERAL,
     CONCAT,
     OR,
-    KlEENE,
+    KLEENE,
     OPTIONAL,
     REPEAT,
     GROUP_DEF,

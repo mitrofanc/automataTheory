@@ -42,7 +42,7 @@ class RegexParserTest {
     @Test
     void kleeneOptional() {
         Node expected = new Node(NodeType.OPTIONAL,
-                new Node(NodeType.KlEENE,
+                new Node(NodeType.KLEENE,
                         new Node(NodeType.LITERAL, "a"), null),
                 null);
 

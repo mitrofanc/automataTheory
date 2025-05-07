@@ -55,7 +55,7 @@ public final class RegexParser {
             switch (look.type()) {
                 case KLEENE -> { // a...
                     look = it.next();
-                    left = new Node(NodeType.KlEENE, left, null);
+                    left = new Node(NodeType.KLEENE, left, null);
                 }
                 case QUESTION -> { // a?
                     look = it.next();
@@ -78,7 +78,9 @@ public final class RegexParser {
         String num = look.text();
         look = it.next();
         expect(TokenType.RBRACE);
-        return new Node(NodeType.REPEAT, num, base, null);
+        Node ret = new Node(NodeType.REPEAT, num, base, null);
+        ret.repeatCount = Integer.parseInt(num);
+        return ret;
     }
 
     // 4) Атомарные символы

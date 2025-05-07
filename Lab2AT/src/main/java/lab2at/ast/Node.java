@@ -1,11 +1,17 @@
 package lab2at.ast;
 
+import java.util.BitSet;
 import java.util.Objects;
 
 public class Node {
     public final NodeType type;
-    public String text;    // для LITERAL, GROUP_DEF (имя), REPEAT (число)
+    public String text;    // для литералов, именнованных групп, повторов
     public Node left, right;
+    public int pos = -1; // >0 только у литерала
+    public boolean nullable;
+    public BitSet first = new BitSet();
+    public BitSet last = new BitSet();
+    public int repeatCount = -1; // только для повторов (отдельная логика для FP)
 
     public Node(NodeType type, String text) {
         this.type = Objects.requireNonNull(type);

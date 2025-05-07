@@ -13,7 +13,7 @@ public final class TestUtil {
         Path OUT_DIR = Path.of("src/test/java/astTests/trees");
         try {
 //            Files.createDirectories(OUT_DIR);
-            GraphVizRenderer.render(root, OUT_DIR.resolve(name + ".png").toString());
+            GraphVizRenderer.renderAst(root, OUT_DIR.resolve(name + ".png").toString());
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
