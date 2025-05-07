@@ -10,17 +10,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Визуализация AST и DFA через GraphViz.
- * Требует установленной команды `dot` в PATH.
- */
 public final class GraphVizRenderer {
 
-    //─────────────────────────────────────────────────────────────────────────
-    //                            РЕНДЕРИНГ AST
-    //─────────────────────────────────────────────────────────────────────────
-
-    /** Рисует AST, сохраняя в imageOutPath (PNG). */
     public static void renderAst(Node root, String imageOutPath)
             throws IOException, InterruptedException {
         String dot = toDot(root);
@@ -28,7 +19,6 @@ public final class GraphVizRenderer {
         System.out.println("AST image generated at: " + imageOutPath);
     }
 
-    /** Собирает AST в формат DOT. */
     public static String toDot(Node root) {
         StringBuilder sb = new StringBuilder();
         sb.append("digraph AST {\n")
@@ -42,14 +32,6 @@ public final class GraphVizRenderer {
         return sb.toString();
     }
 
-    /**
-     * Рекурсивно обходит AST и добавляет узлы и рёбра в DOT.
-     * В каждом узле отображаются поля:
-     *   pos — номер позиции (или -1),
-     *   null — nullable,
-     *   f — firstpos,
-     *   l — lastpos.
-     */
     private static void buildDot(Node node,
                                  StringBuilder sb,
                                  Map<Node,String> ids,
@@ -85,20 +67,10 @@ public final class GraphVizRenderer {
         }
     }
 
-    /** Преобразует BitSet в строку вида "{1, 2, 5}" или "{}" */
     private static String bitSetToString(BitSet bs) {
         return bs.toString();
     }
 
-    //─────────────────────────────────────────────────────────────────────────
-    //                            РЕНДЕРИНГ DFA
-    //─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Рисует DFA, сохраняя в imageOutPath (PNG).
-     * Состояния отображаются как q0, q1, …,
-     * принимающие состояния — двойным кружком.
-     */
     public static void renderDfa(List<DFAState> states, String imageOutPath)
             throws IOException, InterruptedException {
         StringBuilder sb = new StringBuilder();
@@ -110,7 +82,7 @@ public final class GraphVizRenderer {
         for (int i = 0; i < states.size(); i++) {
             DFAState st = states.get(i);
             String shape = st.accept() ? "doublecircle" : "circle";
-            sb.append(String.format("  q%d [label=\"q%d\" shape=%s];\n",
+            sb.append(String.format("  U%d [label=\"U%d\" shape=%s];\n",
                     i, i, shape));
         }
 
@@ -121,7 +93,7 @@ public final class GraphVizRenderer {
                 char sym = e.getKey();
                 int to   = e.getValue();
                 String lbl = sym == '"' ? "\\\"" : String.valueOf(sym);
-                sb.append(String.format("  q%d -> q%d [label=\"%s\"];\n",
+                sb.append(String.format("  U%d -> U%d [label=\"%s\"];\n",
                         i, to, lbl));
             }
         }
@@ -131,11 +103,6 @@ public final class GraphVizRenderer {
         System.out.println("DFA image generated at: " + imageOutPath);
     }
 
-    //─────────────────────────────────────────────────────────────────────────
-    //                    ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
-    //─────────────────────────────────────────────────────────────────────────
-
-    /** Записывает DOT во временный файл и вызывает dot для рендеринга PNG. */
     private static void writeDotAndPng(String dot, String imageOutPath)
             throws IOException, InterruptedException {
         Path dotPath = Paths.get(imageOutPath + ".dot");
@@ -152,7 +119,5 @@ public final class GraphVizRenderer {
         }
     }
 
-    private GraphVizRenderer() {
-        // утилитный класс, не инстанцируется
-    }
+    private GraphVizRenderer() {}
 }
