@@ -30,7 +30,25 @@ public final class Lexer {
                 case '?' -> { tokens.add(new Token(TokenType.QUESTION, null)); i++; }
                 case '(' -> { tokens.add(new Token(TokenType.LPAREN, null)); i++; }
                 case ')' -> { tokens.add(new Token(TokenType.RPAREN, null)); i++; }
-                case '{' -> { tokens.add(new Token(TokenType.LBRACE, null)); i++; }
+                case '{' -> {
+                    int j = i + 1;
+                    if (j >= n || !Character.isDigit(src.charAt(j)))
+                        throw new IllegalArgumentException("Digit expected after '{'");
+
+                    StringBuilder num = new StringBuilder();
+                    while (j < n && Character.isDigit(src.charAt(j))) {
+                        num.append(src.charAt(j));
+                        j++;
+                    }
+                    if (j >= n || src.charAt(j) != '}')
+                        throw new IllegalArgumentException("Missing '}' after repeat number");
+
+                    tokens.add(new Token(TokenType.LBRACE, null));
+                    tokens.add(new Token(TokenType.LITERAL, num.toString()));
+                    tokens.add(new Token(TokenType.RBRACE, null));
+
+                    i = j + 1;
+                }
                 case '}' -> { tokens.add(new Token(TokenType.RBRACE, null)); i++; }
                 case '%' -> {
                     if (i + 2 >= n || src.charAt(i+2) != '%')
