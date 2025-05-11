@@ -21,7 +21,7 @@ public final class DFABuilder {
     private void createMapPosToSym(Node n) {
         if (n.type == NodeType.LITERAL) {
             posToSym.put(n.pos, n.text.charAt(0));
-            if ("$".equals(n.text)) {
+            if ("#".equals(n.text)) {
                 endPos = n.pos;
             }
         }
@@ -47,7 +47,7 @@ public final class DFABuilder {
             Map<Character, BitSet> newSymSet = new HashMap<>(); // set, в котором собираем все возможные FP по каждому символу (map(sym, FP))
             for (int p = S.nextSetBit(0); p >= 0; p = S.nextSetBit(p+1)) { // по каждой позиции
                 char c = posToSym.get(p);
-                if (c =='$') continue;
+                if (c =='#') continue;
                 newSymSet.computeIfAbsent(c, k -> new BitSet()).or(follow.get(p));
             }
 

@@ -22,7 +22,7 @@ public final class GraphVizRenderer {
     public static String toDot(Node root) {
         StringBuilder sb = new StringBuilder();
         sb.append("digraph AST {\n")
-                .append("  node [shape=box, fontname=\"Courier\"];\n");
+                .append("  node [shape=circle, fontname=\"Courier\"];\n");
 
         Map<Node,String> ids = new IdentityHashMap<>();
         AtomicInteger counter = new AtomicInteger(0);

@@ -73,14 +73,27 @@ public final class RegexParser {
     // Обработка повтора (a{n})
     private Node parseRepeat(Node base) {
         expect(TokenType.LBRACE);
-        if (look.type() != TokenType.LITERAL || !look.text().chars().allMatch(Character::isDigit))
-            throw new IllegalArgumentException("Illegal repeat expression");
-        String num = look.text();
+        if (look.type() != TokenType.LITERAL || !look.text().chars().allMatch(Character::isDigit)) {
+            throw new IllegalArgumentException("Expected number after '{'");
+        }
+        int k = Integer.parseInt(look.text());
         look = it.next();
         expect(TokenType.RBRACE);
-        Node ret = new Node(NodeType.REPEAT, num, base, null);
-        ret.repeatCount = Integer.parseInt(num);
-        return ret;
+
+        if (k < 0) {
+            throw new IllegalArgumentException("Negative repeat not allowed");
+        } else if (k == 0) {
+            return new Node(NodeType.NULL_REPEAT, null, null, null);
+        } else if (k == 1) {
+            return base;
+        } else {
+            // разворачиваем r{n}
+            Node result = copyBranch(base);
+            for (int i = 1; i < k; i++) {
+                result = new Node(NodeType.CONCAT, result, copyBranch(base));
+            }
+            return result;
+        }
     }
 
     // 4) Атомарные символы
@@ -130,9 +143,17 @@ public final class RegexParser {
         }
     }
 
-
     // Проверяем, можно ли продолжать строить CONCAT
     private boolean canStartAtom(TokenType t) {
         return t == TokenType.LITERAL || t == TokenType.GROUP_REF || t == TokenType.LPAREN;
+    }
+
+    private Node copyBranch(Node n) {
+        if (n == null) return null;
+        Node left  = copyBranch(n.left);
+        Node right = copyBranch(n.right);
+        Node copy  = new Node(n.type, n.text, left, right);
+        copy.repeatCount = n.repeatCount;
+        return copy;
     }
 }

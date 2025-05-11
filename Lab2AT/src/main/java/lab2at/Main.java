@@ -13,19 +13,19 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        String pattern = "abc?(t{22})(<name1>lo|l)";
+        String pattern = "abc?(t{9})(<name1>lo|l)%?%...";
 
         Lexer lex = new Lexer(pattern);
         Node  tree = new RegexParser(lex.scan()).parse();
 
-        Node eof = new Node(NodeType.LITERAL, "$");
+        Node eof = new Node(NodeType.LITERAL, "#");
         tree = new Node(NodeType.CONCAT, tree, eof);
 
         TreeAnalyzer analyzer = new TreeAnalyzer();
         analyzer.analyze(tree);
         GraphVizRenderer.renderAst(tree, "ast.png");
 
-        DFABuilder b = new DFABuilder(tree, analyzer.follow);
+        DFABuilder b = new DFABuilder(tree, analyzer.followpos);
         List<DFAState> dfa = b.build();
 
         GraphVizRenderer.renderDfa(dfa, "dfa.png");
