@@ -65,7 +65,7 @@ public final class DFABuilder {
             }
 
             boolean accept = endPos >= 0 && S.get(endPos);
-            states.add(id, new DFAState((BitSet) S.clone(), accept, trans));
+//            states.add(id, new DFAState((BitSet) S.clone(), accept, trans));
         }
         return states;
     }

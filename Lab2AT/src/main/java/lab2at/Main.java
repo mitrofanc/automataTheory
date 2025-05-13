@@ -1,34 +1,51 @@
 package lab2at;
 
-import lab2at.ast.NodeType;
-import lab2at.dfa.DFABuilder;
-import lab2at.dfa.DFAState;
-import lab2at.dfa.TreeAnalyzer;
+import lab2at.dfa.DFARunner;
 import lab2at.lexer.Lexer;
+import lab2at.lexer.Token;
 import lab2at.parser.RegexParser;
 import lab2at.ast.Node;
+import lab2at.ast.NodeType;
+import lab2at.dfa.DFACompiler;
+import lab2at.dfa.DFAState;
 import lab2at.util.GraphVizRenderer;
 
 import java.util.List;
+import java.util.Map;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        String pattern = "abc?(t{9})(<name1>lo|l)%?%...";
+        String pattern = "abc?(t{3})(<name1>lo|l)%?%...<name1>";
+        String input   = "0101";
 
-        Lexer lex = new Lexer(pattern);
-        Node  tree = new RegexParser(lex.scan()).parse();
+        // 1) Лексим
+        Lexer lexer = new Lexer(pattern);
+        List<Token> tokens = lexer.scan();
 
-        Node eof = new Node(NodeType.LITERAL, "#");
-        tree = new Node(NodeType.CONCAT, tree, eof);
+        // 2) Парсим AST (еще без конца-маркера)
+        RegexParser parser = new RegexParser(tokens);
+        Node ast = parser.parse();
+        System.out.println("AST before end-marker: " + ast);
 
-        TreeAnalyzer analyzer = new TreeAnalyzer();
-        analyzer.analyze(tree);
-        GraphVizRenderer.renderAst(tree, "ast.png");
+        // 3) Добавляем в конец AST символ конца строки '#'
+        Node endMarker = new Node(NodeType.LITERAL, "#", null, null);
+        ast = new Node(NodeType.CONCAT, ast, endMarker);
+        System.out.println("AST with end-marker: " + ast);
+        GraphVizRenderer.renderAst(ast,           "out/ast_start.png");
 
-        DFABuilder b = new DFABuilder(tree, analyzer.followpos);
-        List<DFAState> dfa = b.build();
+        // 4) Компилируем recursive-DFA (сначала под-группы, потом главный)
+        Map<String, Node> defs = parser.getGroupDefs();
+        DFACompiler compiler = new DFACompiler(defs);
+        int mainDfaId = compiler.compile(ast);
+        List<List<DFAState>> allDfas = compiler.getAll();
 
-        GraphVizRenderer.renderDfa(dfa, "dfa.png");
+        // 5) Рисуем AST и все DFA (включая вложенные)
+        GraphVizRenderer.renderAst(ast,           "out/ast.png");
+        GraphVizRenderer.renderAllDfas(allDfas,  "out/dfa");
+
+        // 6) Запускаем matcher и проверяем ввод
+        DFARunner runner = new DFARunner(allDfas);
+        boolean matches = runner.matches(input, mainDfaId);
+        System.out.printf("Input \"%s\" matches? %s%n", input, matches);
     }
 }
-

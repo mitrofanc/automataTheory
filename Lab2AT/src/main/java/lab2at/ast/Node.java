@@ -7,11 +7,12 @@ public class Node {
     public final NodeType type;
     public String text;    // для литералов, именнованных групп, повторов
     public Node left, right;
-    public int pos = -1; // >0 только у литерала
+    public int pos = -1; // >0 только у литерала и GROUPCALL
     public boolean nullable;
     public BitSet first = new BitSet();
     public BitSet last = new BitSet();
     public int repeatCount = -1; // только для повторов (отдельная логика для FP)
+    // todo delete repeatCount
 
     public Node(NodeType type, String text) {
         this.type = Objects.requireNonNull(type);
@@ -32,7 +33,6 @@ public class Node {
 
     @Override
     public String toString() {
-        // Для отладки выводим in-order
         String label = text == null ? type.name() : type.name() + ":" + text;
         if (left == null && right == null) {
             return label;
@@ -42,4 +42,3 @@ public class Node {
                 + (right == null ? "_" : right.toString()) + ")";
     }
 }
-
