@@ -5,6 +5,7 @@ import lab2at.lexer.Lexer;
 import lab2at.parser.RegexParser;
 import org.junit.jupiter.api.Test;
 import util.TestUtil;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RegexParserTest {
@@ -35,7 +36,7 @@ class RegexParserTest {
 
         Node actual = init("a|bc");
 
-        TestUtil.renderTree(actual, "precedence");
+        TestUtil.renderTree(actual, "or_and");
         AstAssert.assertAstEquals(expected, actual);
     }
 
@@ -55,23 +56,35 @@ class RegexParserTest {
     void namedGroupRepeatOptionalAndRef() {
         String pat = "(<digit>0|1){3}?<digit>";
 
-        Node or = new Node(NodeType.OR,
+        // 1) базовый OR = (0|1)
+        Node or0 = new Node(NodeType.OR,
                 new Node(NodeType.LITERAL, "0"),
                 new Node(NodeType.LITERAL, "1"));
-        Node grp = new Node(NodeType.GROUP_DEF, "digit", or, null);
-        Node rep = new Node(NodeType.REPEAT, "3", grp, null);
-        Node opt = new Node(NodeType.OPTIONAL, rep, null);
-        Node expected = new Node(NodeType.CONCAT,
-                opt,
-                new Node(NodeType.GROUP_REF, "digit"));
+        // 2) три копии этого OR
+        Node or1 = new Node(NodeType.OR,
+                new Node(NodeType.LITERAL, "0"),
+                new Node(NodeType.LITERAL, "1"));
+        Node or2 = new Node(NodeType.OR,
+                new Node(NodeType.LITERAL, "0"),
+                new Node(NodeType.LITERAL, "1"));
+        // 3) строим конкатенацию: ((or0 · or1) · or2)
+        Node c1 = new Node(NodeType.CONCAT, or0, or1);
+        Node c2 = new Node(NodeType.CONCAT, c1, or2);
+        // 4) оборачиваем всё в OPTIONAL (из-за ?)
+        Node opt = new Node(NodeType.OPTIONAL, c2, null);
+        // 5) затем GROUP_CALL на "digit"
+        Node call = new Node(NodeType.GROUP_CALL, "digit", null, null);
+        // итоговая структура: CONCAT(opt, call)
+        Node expected = new Node(NodeType.CONCAT, opt, call);
 
         Node actual = init(pat);
         TestUtil.renderTree(actual, "digit_repeat_optional_ref");
         AstAssert.assertAstEquals(expected, actual);
     }
 
+
     @Test
-    void escapedLiteralBraces() {
+    void escapeBraces() {
         Node expected = new Node(NodeType.LITERAL, "{");
         Node actual = init("%{%");
         TestUtil.renderTree(actual, "escape_brace");
@@ -88,23 +101,16 @@ class RegexParserTest {
 
     @Test
     void repeatWithNoNumber() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> init("a{b}")
-        );
+        assertThrows(IllegalArgumentException.class, () -> init("a{b}"));
     }
 
     @Test
     void repeatMissingClosingBrace() {
-        assertThrows(
-                IllegalArgumentException.class, () -> init("a{3")
-        );
+        assertThrows(IllegalArgumentException.class, () -> init("a{3"));
     }
 
     @Test
     void emptyNamedGroupShouldFail() {
-        assertThrows(
-                IllegalStateException.class, () -> init("(<digit>)")
-        );
+        assertThrows(IllegalStateException.class, () -> init("(<digit>)"));
     }
 }
