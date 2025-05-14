@@ -11,9 +11,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class GraphVizRenderer {
     private GraphVizRenderer() {}
 
-    //────────────────────────────────── AST ───────────────────────────────────
-
-    /** Рисует AST в PNG, добавляя в узлы pos/null/first/last. */
     public static void renderAst(Node root, String outPng) throws IOException, InterruptedException {
         Path png = Paths.get(outPng);
         Files.createDirectories(png.getParent());
@@ -60,12 +57,6 @@ public final class GraphVizRenderer {
         }
     }
 
-    //────────────────────────────────── DFA ───────────────────────────────────
-
-    /**
-     * Рисует **все** DFA (главный + под-DFA) в папку outDir/.
-     * Показывает принимающие состояния двойным кружком.
-     */
     public static void renderAllDfas(List<List<DFAState>> all, String outDir)
             throws IOException, InterruptedException {
         Path dir = Paths.get(outDir);
@@ -127,8 +118,6 @@ public final class GraphVizRenderer {
         return sb.toString();
     }
 
-    //────────────────────────────────── HELPERS ───────────────────────────────────
-
     private static void runDot(Path dotFile, Path pngFile)
             throws IOException, InterruptedException {
         Process p = new ProcessBuilder("dot","-Tpng",
@@ -140,7 +129,6 @@ public final class GraphVizRenderer {
         }
     }
 
-    /** для читаемости меток: заменяем пробел на ␣, экранируем спецсимволы */
     private static String escape(char c) {
         return switch (c) {
             case '<','>','"','\\' -> "\\"+c;

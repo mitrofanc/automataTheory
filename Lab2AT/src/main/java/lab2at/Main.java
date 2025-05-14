@@ -35,6 +35,18 @@ public class Main {
         DFACompiler compiler = new DFACompiler(defs);
         int mainDfaId = compiler.compile(ast);
         List<List<DFAState>> allDfas = compiler.getAll();
+        for (int dfaId = 0; dfaId < allDfas.size(); dfaId++) {
+            System.out.println("=== DFA #" + dfaId + " ===");
+            var states = allDfas.get(dfaId);
+            for (int i = 0; i < states.size(); i++) {
+                DFAState s = states.get(i);
+                System.out.printf("State U%d: accept=%b%n", i, s.accept());
+                System.out.println("  charTrans: " + s.charTrans());
+                System.out.println("  groupTrans: " + s.groupTrans());
+            }
+        }
+
+
 
         // 5) Рисуем AST и все DFA (включая вложенные)
         GraphVizRenderer.renderAst(ast,           "out/ast.png");

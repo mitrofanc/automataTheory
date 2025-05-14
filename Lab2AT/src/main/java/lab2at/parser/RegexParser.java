@@ -97,19 +97,21 @@ public final class RegexParser {
     private Node parseAtoms() {
         switch (look.type()) {
             case LPAREN -> {
-                look = it.next();                 // '('
+                look = it.next(); // '('
                 Token nameTok = null;
                 if (look.type() == TokenType.GROUP_NAME) {
                     nameTok = look;
-                    look = it.next();             // имя группы
+                    look = it.next(); // имя группы
                 }
                 Node inner = parseExpr();
-                expect(TokenType.RPAREN);         // ')'
-                if (nameTok != null)
+                expect(TokenType.RPAREN);
+
+                if (nameTok != null) {
                     return new Node(NodeType.GROUP_DEF, nameTok.text(), inner, null);
+                }
                 return inner;
             }
-            // <name> — ссылка
+            // <name> - ссылка
             case GROUP_REF -> {
                 String name = look.text();
                 look = it.next();
@@ -150,7 +152,7 @@ public final class RegexParser {
     private void collectDefs(Node n) {
         if (n == null) return;
         if (n.type == NodeType.GROUP_DEF)
-            groupDefs.put(n.text, n.left);
+            groupDefs.put(n.text, n.left);   // имя → тело
         collectDefs(n.left);
         collectDefs(n.right);
     }
@@ -158,7 +160,7 @@ public final class RegexParser {
     private Node expandRefs(Node n) {
         if (n == null) return null;
         if (n.type == NodeType.GROUP_DEF) {
-            return expandRefs(n.left);
+            return new Node(NodeType.GROUP_CALL, n.text, null, null);
         } else {
             n.left  = expandRefs(n.left);
             n.right = expandRefs(n.right);
