@@ -17,48 +17,40 @@ public final class DFARunner {
         int i = 0; // позиция в строке
         Deque<Frame> stack = new ArrayDeque<>();
 
-        // true если съели символ
-        boolean getSym = false;
-
         while (true) {
             DFAState curState = all.get(dfa).get(st);
 
-            // переход по символу
+            // по символу 
             if (i < s.length()) {
                 char c = s.charAt(i);
                 Integer next = curState.charTrans().get(c);
                 if (next != null) {
                     st = next;
                     i++;
-                    getSym = true;
                     continue;
                 }
             }
 
-            // переход по группе
-            if (getSym && !curState.groupTrans().isEmpty()) {
-                for (var e : curState.groupTrans().entrySet()) {
-                    int subDfa = e.getKey();
-                    int returnSt = e.getValue();
-                    stack.push(new Frame(dfa, returnSt)); // куда вернуться
-
-                    dfa = subDfa;
-                    st  = 0;
-                    getSym = false;
-                    break;
-                }
-                if (!getSym) continue;
+            // по группе
+            if (!curState.groupTrans().isEmpty()) {
+                var e = curState.groupTrans().entrySet().iterator().next();
+                int subDfa = e.getKey();
+                int returnSt = e.getValue();
+                stack.push(new Frame(dfa, returnSt)); // куда вернутся
+                dfa = subDfa;
+                st = 0;
+                continue;
             }
 
-            // нет переходов, проверяем принимающее или нет
+            // принимающее?
             if (curState.accept()) {
-                if (stack.isEmpty()) return true; // главный ДКА
-
-                Frame f = stack.pop();
-                dfa = f.dfa();
-                st  = f.st();
-                getSym = true;
-                continue;
+                if (!stack.isEmpty()) {
+                    Frame f = stack.pop();
+                    dfa = f.dfa();
+                    st = f.st();
+                    continue;
+                }
+                return i == s.length();
             }
             return false;
         }
