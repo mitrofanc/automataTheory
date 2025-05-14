@@ -1,47 +1,34 @@
 package lab2at.dfa;
 
 import lab2at.ast.Node;
-import lab2at.ast.NodeType;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-public class TreeAnalyzer {
-    public final List<BitSet> followpos = new ArrayList<>(); // FP
-    private int nextPos = 1;    // нумерация листьев начинается с 1
+public final class TreeAnalyzer {
+    private final List<BitSet> followPos;
 
-    public void analyze(Node root) {
-        numberLeaves(root);
-        compute(root);                    // post‑order вычисление
+    public TreeAnalyzer(List<BitSet> followPos) {
+        this.followPos = followPos;
     }
 
-    // Нумеруем литералы
-    private void numberLeaves(Node n) {
-        if (n.left  != null) numberLeaves(n.left);
-        if (n.right != null) numberLeaves(n.right);
-
-        if (n.type == NodeType.LITERAL) {
-            n.pos = nextPos++;
-            while (followpos.size() <= n.pos)
-                followpos.add(new BitSet()); // добавляем FP для каждого литерала
-        }
-    }
-
-    private void compute(Node n) {
-        if (n.left  != null) compute(n.left);
-        if (n.right != null) compute(n.right);
+    public void analyze(Node n) {
+        if (n.left  != null) analyze(n.left);
+        if (n.right != null) analyze(n.right);
 
         switch (n.type) {
-            case LITERAL -> {
+            case LITERAL, GROUP_CALL -> {
                 n.nullable = false;
                 n.first.set(n.pos);
                 n.last.set(n.pos);
             }
+            case NULL_REPEAT -> {
+                n.nullable = true;
+            }
             case CONCAT -> {
                 n.nullable = n.left.nullable && n.right.nullable;
 
-                if (n.left.nullable) { // если левая nullable, то берем из правой
+                if (n.left.nullable) { // если левая nullable, то берем из левой и правой
                     n.first.or(n.left.first);
                     n.first.or(n.right.first);
                 } else {
@@ -57,7 +44,7 @@ public class TreeAnalyzer {
 
                 // для каждой позиции last(left) добавляем first(right)
                 for (int p = n.left.last.nextSetBit(0); p >= 0; p = n.left.last.nextSetBit(p+1))
-                     followpos.get(p).or(n.right.first);
+                    followPos.get(p).or(n.right.first);
             }
             case OR -> {
                 n.nullable = n.left.nullable || n.right.nullable;
@@ -70,23 +57,14 @@ public class TreeAnalyzer {
                 n.last.or(n.left.last); // как у ребенка
                 // для каждой позиции last(left) добавляем весь first(left)
                 for (int p = n.last.nextSetBit(0); p >= 0; p = n.last.nextSetBit(p+1))
-                    followpos.get(p).or(n.first);
+                    followPos.get(p).or(n.first);
             }
             case OPTIONAL -> {
                 n.nullable = true;
                 n.first.or(n.left.first); // как у ребенка
                 n.last.or(n.left.last); // как у ребенка
             }
-            case GROUP_DEF -> {          // группа = содержимое
-                n.nullable = n.left.nullable;
-                n.first.or(n.left.first);
-                n.last.or(n.left.last);
-            }
-            case GROUP_REF ->    {} // не участвует в построении автомата
-            case NULL_REPEAT -> {
-                n.nullable = true;
-            }
-            default -> throw new IllegalStateException("Unsupported node: "+n.type);
+            default -> throw new IllegalStateException("Unsupported node: " + n.type);
         }
     }
 }

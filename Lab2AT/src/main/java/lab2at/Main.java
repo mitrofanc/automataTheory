@@ -15,7 +15,7 @@ import java.util.Map;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        String pattern = "abc?(t{3})(<name1>lo|l)%?%...<name1>";
+        String pattern = "abc?(<name1>lo|l)(t{3})%?%...<name1>";
         String input   = "0101";
 
         // 1) Лексим
@@ -27,9 +27,6 @@ public class Main {
         Node ast = parser.parse();
         System.out.println("AST before end-marker: " + ast);
 
-        // 3) Добавляем в конец AST символ конца строки '#'
-        Node endMarker = new Node(NodeType.LITERAL, "#", null, null);
-        ast = new Node(NodeType.CONCAT, ast, endMarker);
         System.out.println("AST with end-marker: " + ast);
         GraphVizRenderer.renderAst(ast,           "out/ast_start.png");
 
@@ -43,9 +40,9 @@ public class Main {
         GraphVizRenderer.renderAst(ast,           "out/ast.png");
         GraphVizRenderer.renderAllDfas(allDfas,  "out/dfa");
 
-        // 6) Запускаем matcher и проверяем ввод
-        DFARunner runner = new DFARunner(allDfas);
-        boolean matches = runner.matches(input, mainDfaId);
-        System.out.printf("Input \"%s\" matches? %s%n", input, matches);
+//        // 6) Запускаем matcher и проверяем ввод
+//        DFARunner runner = new DFARunner(allDfas);
+//        boolean matches = runner.matches(input, mainDfaId);
+//        System.out.printf("Input \"%s\" matches? %s%n", input, matches);
     }
 }

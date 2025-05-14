@@ -11,8 +11,7 @@ public class Node {
     public boolean nullable;
     public BitSet first = new BitSet();
     public BitSet last = new BitSet();
-    public int repeatCount = -1; // только для повторов (отдельная логика для FP)
-    // todo delete repeatCount
+//    public int repeatCount = -1; // только для повторов (отдельная логика для FP)
 
     public Node(NodeType type, String text) {
         this.type = Objects.requireNonNull(type);

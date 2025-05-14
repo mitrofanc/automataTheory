@@ -94,9 +94,13 @@ public final class DFACompiler {
             Map<Integer, BitSet> moveByGroup = new HashMap<>(); // переходы по группе
 
             for (int p = currentSet.nextSetBit(0); p >= 0; p = currentSet.nextSetBit(p + 1)) {
+
+                if (p == numeration.endPos)
+                    continue;
+
                 BitSet followPosFromCurSet = numeration.followPos.get(p);
 
-                if (numeration.posToSym.containsKey(p)) { // если символ
+                if (numeration.posToSym.containsKey(p)) {      // символ
                     char symbol = numeration.posToSym.get(p);
                     moveBySymbol.computeIfAbsent(symbol, k -> new BitSet()).or(followPosFromCurSet); // объединяем
                 } else if (numeration.posToGroup.containsKey(p)) { // если группа

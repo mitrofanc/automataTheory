@@ -19,7 +19,7 @@ public final class AstAssert {
     // wrapper
     public static void assertAstEquals(Node expected, Node actual) {
         if (!deepEquals(expected, actual))
-            throw new AssertionError("ASTs differ.\nexpected: "
+            throw new AssertionError("ASTs differ.\n expected: "
                     + expected + "\nactual: " + actual);
     }
 

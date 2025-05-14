@@ -6,8 +6,7 @@ public enum NodeType {
     OR,
     KLEENE,
     OPTIONAL,
-//    REPEAT,
+    NULL_REPEAT,
     GROUP_DEF,
-    GROUP_REF,
-    NULL_REPEAT
+    GROUP_CALL
 }
