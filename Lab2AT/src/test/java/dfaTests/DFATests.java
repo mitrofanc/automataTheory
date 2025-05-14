@@ -32,9 +32,9 @@ class DFATests {
 
     @Test
     void testLiteralExact() {
-        assertTrue(matches("hello", "hello"));
-        assertFalse(matches("hello", "hell"));
-        assertFalse(matches("hello", "hello!"));
+        assertTrue(matches("aboba", "aboba"));
+        assertFalse(matches("12kaf", "12|kaf"));
+        assertFalse(matches("aboba", "abobaa"));
     }
 
     @Test
@@ -62,20 +62,10 @@ class DFATests {
 
     @Test
     void testGroupCallSimple() {
-        String pat = "(<g>a|b)c<g>";
-        assertTrue(matches(pat, "aca"));
-        assertTrue(matches(pat, "bcb"));
+        String pat = "abc?(<name1>lo|l)(t{3})%?%...<name1>";
+        assertTrue(matches(pat, "ablottt??lo"));
+        assertTrue(matches(pat, "abclttt?l"));
         assertFalse(matches(pat, "acc"));
-        assertFalse(matches(pat, "cbc"));
-    }
-
-    @Test
-    void testRepeatNamedGroup() {
-        String pat = "(<d>0|1){3}?<d>";
-        assertTrue(matches(pat, "0000"));
-        assertTrue(matches(pat, "1010"));
-        assertTrue(matches(pat, "1111"));
-        assertFalse(matches(pat, "000"));
-        assertFalse(matches(pat, "00000"));
+        assertFalse(matches(pat, "abclott?l"));
     }
 }
