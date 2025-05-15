@@ -82,7 +82,7 @@ public final class Lexer {
             j++;
         }
         if (j >= n || src.charAt(j) != '>')
-            throw new IllegalArgumentException("Expect \"<\" after \"<\"");
+            throw new IllegalArgumentException("Expect \"<\"");
 
         String name = sb.toString();
         i = j + 1;  // i после >

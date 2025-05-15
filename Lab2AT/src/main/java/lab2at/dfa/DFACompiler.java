@@ -16,26 +16,45 @@ public final class DFACompiler {
 
     // возвращает id внешнего ДКА
     public int compile(Node mainAst) {
+
+        /* 1. сначала все под-DFA групп */
         for (var e : groupDefs.entrySet()) {
-            if (!nameToDfa.containsKey(e.getKey()))
-                nameToDfa.put(e.getKey(), build(e.getValue()));
+            if (!nameToDfa.containsKey(e.getKey())) {
+                int gId = build(e.getValue());      // build → уже минимизирует
+                nameToDfa.put(e.getKey(), gId);
+            }
         }
-        return build(mainAst);
+
+        /* 2. потом главный автомат  */
+        return build(mainAst);                      // build → уже минимизирует
     }
 
-    // возвращает id сформированного ДКА
+    /* ---------- один автомат -------------------------------------------- */
+
     private int build(Node root) {
+
+        /* добавляем # только для главного вызова (root уже с маркером?) */
         if (!hasEndMarker(root)) {
-            Node end = new Node(NodeType.LITERAL, "#", null, null);
-            root = new Node(NodeType.CONCAT, root, end);
+            root = new Node(
+                    NodeType.CONCAT,
+                    root,
+                    new Node(NodeType.LITERAL, "#", null, null));
         }
 
-        Numeration numeration = new Numeration();
-        number(root, numeration);
+        /* 1. нумерация листьев  */
+        Numeration num = new Numeration();
+        number(root, num);
 
-        new TreeAnalyzer(numeration.followPos).analyze(root);
+        /* 2. first/last/follow  */
+        new TreeAnalyzer(num.followPos).analyze(root);
 
-        List<DFAState> states = createDFA(root, numeration);
+        /* 3. детерминизация  → сырой список состояний */
+        List<DFAState> states = createDFA(root, num);
+
+        /* 4. минимизация  */
+        states = DFAMinimizer.minimize(states);
+
+        /* 5. кладём в общий пул */
         int id = all.size();
         all.add(states);
         return id;

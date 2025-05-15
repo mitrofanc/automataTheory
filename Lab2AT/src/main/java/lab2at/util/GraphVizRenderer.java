@@ -18,7 +18,6 @@ public final class GraphVizRenderer {
         Path dotFile = png.resolveSibling(png.getFileName() + ".dot");
         Files.writeString(dotFile, dot);
         runDot(dotFile, png);
-        System.out.println("AST → " + png);
     }
 
     private static String toDotAst(Node root) {
@@ -70,7 +69,6 @@ public final class GraphVizRenderer {
 
             Files.writeString(dot, toDotDfa(states, "U", dfaId));
             runDot(dot, png);
-            System.out.println("DFA#" + dfaId + " → " + png);
         }
     }
 
@@ -108,7 +106,7 @@ public final class GraphVizRenderer {
             for (var e : s.groupTrans().entrySet()) {
                 int gid = e.getKey();
                 int to  = e.getValue();
-                String lbl = "call_g" + gid;
+                String lbl = "group" + gid;
                 sb.append(String.format("  %s%d -> %s%d [style=dashed,label=\"%s\"];\n",
                         prefix, i, prefix, to, lbl));
             }
