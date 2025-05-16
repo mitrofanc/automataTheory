@@ -1,34 +1,17 @@
 package dfaTests;
 
-import lab2at.ast.Node;
-import lab2at.dfa.DFACompiler;
-import lab2at.dfa.DFARunner;
-import lab2at.lexer.Lexer;
-import lab2at.lexer.Token;
-import lab2at.parser.RegexParser;
+import lab2at.lib.RegexLib;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class DFATests {
 
     private boolean matches(String pattern, String input) {
-        Lexer lexer = new Lexer(pattern);
-        List<Token> tokens = lexer.scan();
-
-        RegexParser parser = new RegexParser(tokens);
-        Node ast = parser.parse();
-
-        Map<String, Node> defs = parser.getGroupDefs();
-        DFACompiler compiler = new DFACompiler(defs);
-        int mainId = compiler.compile(ast);
-
-        DFARunner runner = new DFARunner(compiler.getAll());
-        return runner.matches(input, mainId);
+        RegexLib lib = RegexLib.compile(pattern);
+        return lib.match(input);
     }
+
 
     @Test
     void testLiteralExact() {
