@@ -9,13 +9,21 @@ public final class DFARunner {
         this.all = all;
     }
 
-    public boolean matches(String str, int mainId) {
-        record Frame(int dfa, int st) {}
+    public static final class PrefixMatch {
+        public int length; //  –1, если не совпало
+        public final Map<Integer, int[]> namedGroupSubs = new HashMap<>(); // dfaId, [start, end]
+    }
 
-        int dfa = mainId; // текущий ДКА
-        int st = 0; // текущее состояние
-        int i = 0; // позиция в строке
+    public PrefixMatch matchPrefix(String str, int from, int mainId) {
+        record Frame(int dfa, int retSt, int groupId, int groupStart) {}
+
         Deque<Frame> stack = new ArrayDeque<>();
+        PrefixMatch prefixMatch = new PrefixMatch();
+        prefixMatch.length = -1;
+
+        int dfa = mainId;
+        int st = 0;
+        int i = from;
 
         while (true) {
             DFAState curState = all.get(dfa).get(st);
@@ -34,68 +42,31 @@ public final class DFARunner {
             // по группе
             if (!curState.groupTrans().isEmpty()) {
                 var e = curState.groupTrans().entrySet().iterator().next();
-                int subDFA = e.getKey();
-                int returnSt = e.getValue();
-                stack.push(new Frame(dfa, returnSt)); // куда вернутся
-                dfa = subDFA;
-                st  = 0;
-                continue;
-            }
+                int subId = e.getKey();
+                int retSt = e.getValue(); // куда вернуться
+                stack.push(new Frame(dfa, retSt, subId, i - from));
+                prefixMatch.namedGroupSubs.put(subId, new int[]{i - from, -1});
 
-            // принимающее?
-            if (curState.accept()) {
-                if (!stack.isEmpty()) {
-                    Frame f = stack.pop();
-                    dfa = f.dfa();
-                    st = f.st();
-                    continue;
-                }
-                return i == str.length();
-            }
-            return false;
-        }
-    }
-
-    public int matchPrefix(String str, int from, int mainId) {
-        record Frame(int dfa, int st) {}
-
-        int dfa = mainId; // текущий ДКА
-        int st = 0; // текущее состояние
-        int i = 0; // позиция в строке
-        Deque<Frame> stack = new ArrayDeque<>();
-
-        while (true) {
-            DFAState curState = all.get(dfa).get(st);
-
-            // по символу
-            if (i < str.length()) {
-                Integer next = curState.charTrans().get(str.charAt(i));
-                if (next != null) {
-                    st = next;
-                    i++;
-                    continue;
-                }
-            }
-
-            // по группе
-            if (!curState.groupTrans().isEmpty()) {
-                var e = curState.groupTrans().entrySet().iterator().next();
-                stack.push(new Frame(dfa, e.getValue()));
-                dfa = e.getKey();
+                dfa = subId;
                 st = 0;
                 continue;
             }
 
             // принимающее?
             if (curState.accept()) {
-                if (stack.isEmpty())
-                    return i - from; // длина совпадения
-                Frame f = stack.pop(); // завершаем под-DFA
-                dfa = f.dfa();
-                st = f.st();
-                continue;
+                if (!stack.isEmpty()) {
+                    var frame = stack.pop();
+                    prefixMatch.namedGroupSubs.get(frame.groupId)[1] = i - from; // ставим окончание
+                    dfa = frame.dfa;
+                    st = frame.retSt;
+                    continue;
+                }
+                prefixMatch.length = i - from;
+                return prefixMatch;
             }
-            return -1; // матч невозможен
+
+           // не распознали
+            return prefixMatch;
         }
     }
 }

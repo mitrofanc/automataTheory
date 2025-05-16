@@ -1,23 +1,32 @@
+// src/main/java/lab2at/Main.java
 package lab2at;
 
-import lab2at.dfa.DFARunner;
-import lab2at.lexer.Lexer;
-import lab2at.lexer.Token;
 import lab2at.lib.RegexLib;
-import lab2at.parser.RegexParser;
-import lab2at.ast.Node;
-import lab2at.dfa.DFACompiler;
-import lab2at.dfa.DFAState;
-import lab2at.util.GraphVizRenderer;
-
-import java.util.List;
-import java.util.Map;
+import lab2at.lib.MatchResult;
 
 public class Main {
     public static void main(String[] args) {
-        RegexLib re = RegexLib.compile("abc?(<name1>lo|l)(t{3})%?%...<name1>");
-        System.out.println( re.match("ablottt?lo") );   // true
-        System.out.println( re.match("abctttlo") );     // false
-    }
+        String pattern = "(<first>a...)(<second>b)c";
+        String text    = "xxaaabcyy";
 
+        RegexLib lib = RegexLib.compile(pattern);
+
+        String full = "aaabc";
+        System.out.printf("match(\"%s\") → %b%n", full, lib.match(full));
+
+        // 2) Поиск
+        String found = lib.search(text);
+        System.out.printf("search(\"%s\") → %s%n", text,
+                found != null ? "\"" + found + "\"" : "null");
+
+        // 3) Поиск с группами
+        MatchResult mr = lib.searchWithGroups(text);
+        if (mr != null) {
+            System.out.println("searchWithGroups → найдено:");
+            System.out.printf("  first  = \"%s\"%n", mr.group("first"));
+            System.out.printf("  second = \"%s\"%n", mr.group("second"));
+        } else {
+            System.out.println("searchWithGroups → ничего не найдено");
+        }
+    }
 }
