@@ -1,31 +1,35 @@
 package lab2at;
 
 import lab2at.lib.RegexLib;
+import lab2at.util.GraphVizRenderer;
+import java.io.IOException;
+import java.util.List;
 
 public class Main {
-    public static void main(String[] args) throws Exception {
-        // Исходный паттерн "abc"
-        RegexLib regex = RegexLib.compile("abc");
-        System.out.println("match(\"abc\") = " + regex.match("abc")); // true
-        System.out.println("match(\"abd\") = " + regex.match("abd")); // false
 
-        // Инверсия: принимает все, что НЕ "abc"
-        RegexLib inverted = regex.invert();
-        System.out.println("invert match(\"abc\") = " + inverted.match("abc")); // false
-        System.out.println("invert match(\"abd\") = " + inverted.match("abd")); // true
-        System.out.println("invert match(\"\") = " + inverted.match(""));     // true (пустая строка не "abc")
+    public static void main(String[] args) throws IOException, InterruptedException {
+        // Пример 1: L1 = a... (a*)  и  L2 = "aa"
+        RegexLib lib1 = RegexLib.compile("a...(b|c)");
+        GraphVizRenderer.renderAllDfas(lib1.getAllDFA(), "out/dfa1");
+        RegexLib lib2 = RegexLib.compile("(a|b)...c");
+        GraphVizRenderer.renderAllDfas(lib2.getAllDFA(), "out/dfa2");
+        RegexLib inter1 = lib1.intersect(lib2);
+        GraphVizRenderer.renderAllDfas(List.of(inter1.getAllDFA().get(inter1.getMainDFAId())), "out/intersect");
 
-        // Пересечение паттернов: a... и aa...
-        RegexLib r1 = RegexLib.compile("a...");
-        RegexLib r2 = RegexLib.compile("aa...");
-        RegexLib intersected = r1.intersect(r2);
 
-        System.out.println("intersect match(\"a\") = " + intersected.match("a"));     // false, т.к. r2 требует минимум 2 'a'
-        System.out.println("intersect match(\"aa\") = " + intersected.match("aa"));   // true
-        System.out.println("intersect match(\"aaa\") = " + intersected.match("aaa")); // true
+        System.out.println(inter1.match("aa"));    // true  (пересечение = {"aa"})
+        System.out.println(inter1.match("a"));     // false
+        System.out.println(inter1.match("aaaa"));  // false
 
-        // Проверка search с инверсией
-        String text = "zzzabczzz";
-        System.out.println("search in inverted: " + inverted.search(text)); // найдёт первое несовпадение, т.е. "zzz" или т.п.
+        // Пример 2: L3 = a|b  и  L4 = b|c
+        RegexLib lib3 = RegexLib.compile("a|b");
+        RegexLib lib4 = RegexLib.compile("b|c");
+        RegexLib inter2 = lib3.intersect(lib4);
+
+        System.out.println(inter2.match("b"));     // true
+        System.out.println(inter2.match("a"));     // false
+        System.out.println(inter2.match("c"));     // false
     }
+
+
 }

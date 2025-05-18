@@ -9,29 +9,49 @@ import lab2at.ast.Node;
 import lab2at.dfa.DFACompiler;
 import lab2at.dfa.DFARunner;
 import lab2at.dfa.DFARunner.PrefixMatch;
+import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+@Getter
 public final class RegexLib {
     private final DFARunner runner;
     private final int mainDFAId;
     private final List<String> groupNames; // группы
     private final Map<String, Integer> nameToDfaId;
     private final List<List<DFAState>> allDFA;
+    private final Map<String, Node> groupDefs;
+    private Node mainRoot;
 
     private RegexLib(DFARunner runner,
                      int mainDFAId,
                      List<String> groupNames,
                      Map<String, Integer> nameToDfaId,
-                     List<List<DFAState>> allDFA) {
+                     List<List<DFAState>> allDFA,
+                     Map<String, Node> groupDefs,
+                     Node mainRoot) {
         this.runner = runner;
         this.mainDFAId = mainDFAId;
         this.groupNames = List.copyOf(groupNames);
         this.nameToDfaId = Map.copyOf(nameToDfaId);
         this.allDFA = List.copyOf(allDFA);
+        this.groupDefs = Map.copyOf(groupDefs);
+        this.mainRoot = mainRoot;
+    }
+
+    private RegexLib(DFARunner runner,
+                     int mainDFAId,
+                     List<String> groupNames,
+                     Map<String, Integer> nameToDfaId,
+                     List<List<DFAState>> allDFA,
+                     Map<String, Node> groupDefs) {
+        this.runner = runner;
+        this.mainDFAId = mainDFAId;
+        this.groupNames = List.copyOf(groupNames);
+        this.nameToDfaId = Map.copyOf(nameToDfaId);
+        this.allDFA = List.copyOf(allDFA);
+        this.groupDefs = Map.copyOf(groupDefs);
+        this.mainRoot = null;
     }
 
     public static RegexLib compile(String pattern) {
@@ -41,7 +61,8 @@ public final class RegexLib {
         RegexParser parser = new RegexParser(tokens);
         Node ast = parser.parse();
 
-        var groupDefs = parser.getGroupDefs();
+        Map<String, Node> groupDefs = new HashMap<>(parser.getGroupDefs()); // делаем изменяемую копию
+
         List<String> names = new ArrayList<>(groupDefs.keySet());
 
         DFACompiler compiler = new DFACompiler(groupDefs);
@@ -49,7 +70,7 @@ public final class RegexLib {
         List<List<DFAState>> allDFA = compiler.getAll();
         DFARunner runner = new DFARunner(allDFA);
 
-        return new RegexLib(runner, mainId, names, compiler.getNameToDfa(), allDFA);
+        return new RegexLib(runner, mainId, names, compiler.getNameToDfa(), allDFA, groupDefs, ast);
     }
 
     public boolean match(String input) {
@@ -85,23 +106,38 @@ public final class RegexLib {
         return null;
     }
 
-//    public RegexLib invert() {
-//        List<DFAState> invDfa = DFAOperations.invert(allDFA.get(mainDFAId));
-//        List<List<DFAState>> newAll = new ArrayList<>(allDFA);
-//        newAll.set(mainDFAId, invDfa);
-//        return new RegexLib(new DFARunner(newAll), mainDFAId, groupNames, nameToDfaId, newAll);
-//    }
-//
-//    public RegexLib intersect(RegexLib other) {
-//        List<DFAState> dfa1 = this.allDFA.get(this.mainDFAId);
-//        List<DFAState> dfa2 = other.allDFA.get(other.mainDFAId);
-//
-//        List<DFAState> intersected = DFAOperations.intersect(dfa1, dfa2);
-//
-//        List<List<DFAState>> newAll = new ArrayList<>(this.allDFA);
-//        newAll.add(intersected);
-//        int newMainId = newAll.size() - 1;
-//
-//        return new RegexLib(new DFARunner(newAll), newMainId, this.groupNames, this.nameToDfaId, newAll);
-//    }
+    public RegexLib reverse() {
+        Map<String, Node> revGroupDefs = new HashMap<>();
+        for (var e : groupDefs.entrySet()) {
+            revGroupDefs.put(e.getKey(), DFAOperations.reverse(e.getValue()));
+        }
+
+        mainRoot = DFAOperations.reverse(mainRoot);
+//        Node mainRoot = revGroupDefs.get("mainAST");
+//        revGroupDefs.remove("mainAST");
+        // не нужно удалять "mainAST" — компилятор справится с этим
+
+        DFACompiler compiler = new DFACompiler(revGroupDefs);
+        int mainId = compiler.compile(mainRoot);
+
+        List<List<DFAState>> allDFA = compiler.getAll();
+        DFARunner runner = new DFARunner(allDFA);
+
+        List<String> names = new ArrayList<>(revGroupDefs.keySet());
+
+        return new RegexLib(runner, mainId, names, compiler.getNameToDfa(), allDFA, revGroupDefs, mainRoot);
+    }
+
+    public RegexLib intersect(RegexLib other) {
+        List<DFAState> dfa1 = this.allDFA.get(this.mainDFAId);
+        List<DFAState> dfa2 = other.allDFA.get(other.mainDFAId);
+
+        List<DFAState> intersected = DFAOperations.intersect(dfa1, dfa2);
+
+        List<List<DFAState>> newAll = new ArrayList<>(this.allDFA);
+        newAll.add(intersected);
+        int newMainId = newAll.size() - 1;
+
+        return new RegexLib(new DFARunner(newAll), newMainId, this.groupNames, this.nameToDfaId, newAll, this.groupDefs);
+    }
 }
