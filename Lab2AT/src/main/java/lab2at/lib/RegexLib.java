@@ -22,6 +22,7 @@ public final class RegexLib {
     private final List<List<DFAState>> allDFA;
     private final Map<String, Node> groupDefs;
     private Node mainRoot;
+    private final String pattern;
 
     private RegexLib(DFARunner runner,
                      int mainDFAId,
@@ -29,7 +30,8 @@ public final class RegexLib {
                      Map<String, Integer> nameToDfaId,
                      List<List<DFAState>> allDFA,
                      Map<String, Node> groupDefs,
-                     Node mainRoot) {
+                     Node mainRoot,
+                     String pattern) {
         this.runner = runner;
         this.mainDFAId = mainDFAId;
         this.groupNames = List.copyOf(groupNames);
@@ -37,6 +39,7 @@ public final class RegexLib {
         this.allDFA = List.copyOf(allDFA);
         this.groupDefs = Map.copyOf(groupDefs);
         this.mainRoot = mainRoot;
+        this.pattern = pattern;
     }
 
     private RegexLib(DFARunner runner,
@@ -44,13 +47,15 @@ public final class RegexLib {
                      List<String> groupNames,
                      Map<String, Integer> nameToDfaId,
                      List<List<DFAState>> allDFA,
-                     Map<String, Node> groupDefs) {
+                     Map<String, Node> groupDefs,
+                     String pattern) {
         this.runner = runner;
         this.mainDFAId = mainDFAId;
         this.groupNames = List.copyOf(groupNames);
         this.nameToDfaId = Map.copyOf(nameToDfaId);
         this.allDFA = List.copyOf(allDFA);
         this.groupDefs = Map.copyOf(groupDefs);
+        this.pattern = pattern;
         this.mainRoot = null;
     }
 
@@ -70,7 +75,15 @@ public final class RegexLib {
         List<List<DFAState>> allDFA = compiler.getAll();
         DFARunner runner = new DFARunner(allDFA);
 
-        return new RegexLib(runner, mainId, names, compiler.getNameToDfa(), allDFA, groupDefs, ast);
+        return new RegexLib(
+                runner,
+                mainId,
+                names,
+                compiler.getNameToDfa(),
+                allDFA,
+                groupDefs,
+                ast,
+                pattern);
     }
 
     public boolean match(String input) {
@@ -113,10 +126,6 @@ public final class RegexLib {
         }
 
         mainRoot = DFAOperations.reverse(mainRoot);
-//        Node mainRoot = revGroupDefs.get("mainAST");
-//        revGroupDefs.remove("mainAST");
-        // не нужно удалять "mainAST" — компилятор справится с этим
-
         DFACompiler compiler = new DFACompiler(revGroupDefs);
         int mainId = compiler.compile(mainRoot);
 
@@ -125,7 +134,15 @@ public final class RegexLib {
 
         List<String> names = new ArrayList<>(revGroupDefs.keySet());
 
-        return new RegexLib(runner, mainId, names, compiler.getNameToDfa(), allDFA, revGroupDefs, mainRoot);
+        return new RegexLib(
+                runner,
+                mainId,
+                names,
+                compiler.getNameToDfa(),
+                allDFA,
+                revGroupDefs,
+                mainRoot,
+                this.pattern);
     }
 
     public RegexLib intersect(RegexLib other) {
@@ -138,6 +155,13 @@ public final class RegexLib {
         newAll.add(intersected);
         int newMainId = newAll.size() - 1;
 
-        return new RegexLib(new DFARunner(newAll), newMainId, this.groupNames, this.nameToDfaId, newAll, this.groupDefs);
+        return new RegexLib(
+                new DFARunner(newAll),
+                newMainId,
+                this.groupNames,
+                this.nameToDfaId,
+                newAll,
+                this.groupDefs,
+                this.pattern);
     }
 }

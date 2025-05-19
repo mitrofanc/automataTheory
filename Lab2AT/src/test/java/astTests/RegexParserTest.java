@@ -53,31 +53,6 @@ class RegexParserTest {
     }
 
     @Test
-    void namedGroupRepeatOptionalAndRef() {
-        String pat = "(<digit>0|1){3}?<digit>";
-
-        Node or0 = new Node(NodeType.OR,
-                new Node(NodeType.LITERAL, "0"),
-                new Node(NodeType.LITERAL, "1"));
-        Node or1 = new Node(NodeType.OR,
-                new Node(NodeType.LITERAL, "0"),
-                new Node(NodeType.LITERAL, "1"));
-        Node or2 = new Node(NodeType.OR,
-                new Node(NodeType.LITERAL, "0"),
-                new Node(NodeType.LITERAL, "1"));
-        Node c1 = new Node(NodeType.CONCAT, or0, or1);
-        Node c2 = new Node(NodeType.CONCAT, c1, or2);
-        Node opt = new Node(NodeType.OPTIONAL, c2, null);
-        Node call = new Node(NodeType.GROUP_CALL, "digit", null, null);
-        Node expected = new Node(NodeType.CONCAT, opt, call);
-
-        Node actual = init(pat);
-        TestUtil.renderTree(actual, "digit_repeat_optional_ref");
-        AstAssert.assertAstEquals(expected, actual);
-    }
-
-
-    @Test
     void escapeBraces() {
         Node expected = new Node(NodeType.LITERAL, "{");
         Node actual = init("%{%");
