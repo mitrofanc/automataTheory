@@ -1,119 +1,39 @@
 import ply.lex as lex
 
 tokens = [
-    # Логические литералы
-    'TRUE',
-    'FALSE',
-
-    # Целочисленные литералы в 3 форматах
-    'OCT_INT',
-    'DEC_INT',
-    'HEX_INT',
-
-    # Переменные VAR
-    'VAR',
-    'IDENTIFIER',
-
-    # Размерности в квадратных скобках и запятые
-    'LBRACKET', 'RBRACKET', 'COMMA',
-
-    # Операторы
-    'ASSIGN',
-
-    # Арифметические операторы
-    'PLUS', 'MINUS', 'MULT', 'DIV',
-
-    # Логические операторы
-    'NOT', 'AND', 'MXTRUE', 'MXFALSE',
-
-    # Операторы сравнения
-    'MXEQ', 'MXLT', 'MXGT', 'MXLTE', 'MXGTE',
-    'ELEQ', 'ELLT', 'ELGT', 'ELLTE', 'ELGTE',
-
-    # Операторы управления роботом и язык
+    'TRUE', 'FALSE',
+    'OCT_INT', 'DEC_INT', 'HEX_INT',
+    'VAR', 'SIZE', 'LOGITIZE', 'DIGITIZE',
+    'REDUCE', 'EXTEND',
     'MOVE', 'ROTATE', 'LEFT', 'RIGHT',
     'FOR', 'BOUNDARY', 'STEP',
-    'SWITCH',
-    'TASK', 'DO', 'GET', 'RESULT', 'FINDEXIT',
-    'PLEASE', 'THANKS',
-
-    # Новые ключевые слова/операторы из задания
-    'SIZE',
-    'LOGITIZE',
-    'DIGITIZE',
-    'REDUCE',
-    'EXTEND',
-    'ENVIRONMENT',
-
-    # Скобки
-    'LPAREN', 'RPAREN',
+    'SWITCH', 'TASK', 'DO', 'GET', 'RESULT', 'FINDEXIT',
+    'PLEASE', 'THANKS', 'ENVIRONMENT',
+    'NOT', 'AND', 'MXTRUE', 'MXFALSE',
+    'MXEQ', 'MXLT', 'MXGT', 'MXLTE', 'MXGTE',
+    'ELEQ', 'ELLT', 'ELGT', 'ELLTE', 'ELGTE',
+    'IDENTIFIER', 'ASSIGN', 'PLUS', 'MINUS', 'MULT', 'DIV',
+    'LPAREN', 'RPAREN', 'LBRACKET', 'RBRACKET', 'COMMA'
 ]
 
-# Регулярные выражения для простых символов
-t_ASSIGN = r'='
-t_PLUS = r'\+'
-t_MINUS = r'-'
-t_MULT = r'\*'
-t_DIV = r'/'
+t_ASSIGN   = r'='
+t_PLUS     = r'\+'
+t_MINUS    = r'-'
+t_MULT     = r'\*'
+t_DIV      = r'/'
+t_LPAREN   = r'\('
+t_RPAREN   = r'\)'
 t_LBRACKET = r'\['
 t_RBRACKET = r'\]'
-t_COMMA = r','
-
-t_LPAREN = r'\('
-t_RPAREN = r'\)'
+t_COMMA    = r','
 
 t_ignore = ' \t\r'
 
-reserved_map = {
-    'VAR': 'VAR',
-    'TRUE': 'TRUE',
-    'FALSE': 'FALSE',
-    'NOT': 'NOT',
-    'AND': 'AND',
-    'MXTRUE': 'MXTRUE',
-    'MXFALSE': 'MXFALSE',
-
-    'MXEQ': 'MXEQ',
-    'MXLT': 'MXLT',
-    'MXGT': 'MXGT',
-    'MXLTE': 'MXLTE',
-    'MXGTE': 'MXGTE',
-
-    'ELEQ': 'ELEQ',
-    'ELLT': 'ELLT',
-    'ELGT': 'ELGT',
-    'ELLTE': 'ELLTE',
-    'ELGTE': 'ELGTE',
-
-    'MOVE': 'MOVE',
-    'ROTATE': 'ROTATE',
-    'LEFT': 'LEFT',
-    'RIGHT': 'RIGHT',
-
-    'FOR': 'FOR',
-    'BOUNDARY': 'BOUNDARY',
-    'STEP': 'STEP',
-
-    'SWITCH': 'SWITCH',
-    'TASK': 'TASK',
-    'DO': 'DO',
-    'GET': 'GET',
-    'RESULT': 'RESULT',
-    'FINDEXIT': 'FINDEXIT',
-    'PLEASE': 'PLEASE',
-    'THANKS': 'THANKS',
-
-    'SIZE': 'SIZE',
-    'LOGITIZE': 'LOGITIZE',
-    'DIGITIZE': 'DIGITIZE',
-    'REDUCE': 'REDUCE',
-    'EXTEND': 'EXTEND',
-    'ENVIRONMENT': 'ENVIRONMENT',
-}
+reserved = {k: k for k in tokens if k.isupper() and k not in ('OCT_INT', 'DEC_INT', 'HEX_INT', 'IDENTIFIER')}
 
 def t_IDENTIFIER(t):
     r'[A-Za-z_][A-Za-z0-9_]*'
-    t.type = reserved_map.get(t.value.upper(), 'IDENTIFIER')
+    t.type = reserved.get(t.value.upper(), 'IDENTIFIER')
     return t
 
 def t_HEX_INT(t):
@@ -128,7 +48,23 @@ def t_OCT_INT(t):
 
 def t_DEC_INT(t):
     r'[1-9][0-9]*'
-    t.value = int(t.value, 10)
+    t.value = int(t.value)
+    return t
+
+def t_ZERO(t):
+    r'0'
+    t.value = 0
+    t.type = 'DEC_INT'
+    return t
+
+def t_TRUE(t):
+    r'TRUE'
+    t.value = True
+    return t
+
+def t_FALSE(t):
+    r'FALSE'
+    t.value = False
     return t
 
 def t_newline(t):
@@ -136,7 +72,6 @@ def t_newline(t):
     t.lexer.lineno += len(t.value)
 
 def t_error(t):
-    print(f"Illegal character '{t.value[0]}' at line {t.lineno}")
-    t.lexer.skip(1)
+    raise SyntaxError(f"Illegal character '{t.value[0]}' at line {t.lineno}")
 
 lexer = lex.lex()

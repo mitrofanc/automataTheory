@@ -1,0 +1,21 @@
+VAR counter = 0
+FOR counter BOUNDARY 5 STEP 1 (
+    MOVE
+    ROTATE RIGHT
+)
+SWITCH MXTRUE TRUE (
+    MOVE
+) FALSE (
+    ROTATE LEFT
+)
+TASK FINDEXIT (
+    DO MOVE
+    SWITCH GET ENVIRONMENT TRUE (
+        MOVE
+    ) FALSE (
+        ROTATE LEFT
+    )
+)
+RESULT counter
+
+DO FINDEXIT
