@@ -38,7 +38,7 @@ def main():
             print("Программа выполнена")
             running = False
 
-        clock.tick(5)  # регулировка скорости анимации
+        clock.tick(5)
 
     pygame.quit()
 

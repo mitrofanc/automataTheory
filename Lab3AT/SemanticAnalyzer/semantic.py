@@ -1,8 +1,5 @@
 from collections import namedtuple
 
-class SemanticError(Exception):
-    pass
-
 class Type(namedtuple("Type", ["base", "dims"])):
     __slots__ = ()
 
@@ -221,3 +218,6 @@ class SemanticAnalyzer:
     def _assert_array_bool(self, t):
         if not (t.base == 'bool' and t.is_array):
             raise SemanticError("Ожидался массив bool")
+
+class SemanticError(Exception):
+    pass

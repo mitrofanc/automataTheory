@@ -3,9 +3,9 @@ from collections import deque
 
 class Maze:
     def __init__(self, grid, start, exits):
-        self.grid = grid  # 2D массив bool, True=стена
-        self.start = start  # (row, col) начальная позиция
-        self.exits = exits  # список координат выходов
+        self.grid = grid  # True=стена
+        self.start = start
+        self.exits = exits
 
         self.height = len(grid)
         self.width = len(grid[0]) if self.height > 0 else 0
@@ -22,24 +22,24 @@ class Maze:
             if self.is_free(nr, nc):
                 yield (nr, nc)
 
-    def find_path(self):
-        """Поиск пути от start к ближайшему выходу BFS"""
-        queue = deque([self.start])
-        came_from = {self.start: None}
-
-        while queue:
-            current = queue.popleft()
-            if current in self.exits:
-                path = []
-                while current:
-                    path.append(current)
-                    current = came_from[current]
-                return list(reversed(path))
-            for nxt in self.neighbors(*current):
-                if nxt not in came_from:
-                    came_from[nxt] = current
-                    queue.append(nxt)
-        return None
+    # def find_path(self):
+    #     """Поиск пути от start к ближайшему выходу BFS"""
+    #     queue = deque([self.start])
+    #     came_from = {self.start: None}
+    #
+    #     while queue:
+    #         current = queue.popleft()
+    #         if current in self.exits:
+    #             path = []
+    #             while current:
+    #                 path.append(current)
+    #                 current = came_from[current]
+    #             return list(reversed(path))
+    #         for nxt in self.neighbors(*current):
+    #             if nxt not in came_from:
+    #                 came_from[nxt] = current
+    #                 queue.append(nxt)
+    #     return None
 
     @classmethod
     def load_from_file(cls, filepath):
