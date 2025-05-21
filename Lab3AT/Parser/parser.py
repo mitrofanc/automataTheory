@@ -9,8 +9,6 @@ precedence = (
     ('left', 'MULT', 'DIV'),
 )
 
-symbol_table = {}
-
 def p_program(p):
     'program : statements'
     p[0] = ('program', p[1])

@@ -1,5 +1,5 @@
 from SemanticAnalyzer.semantic import SemanticAnalyzer, SemanticError
-from Parser.parser import parser            # импорт готового парсера
+from Parser.parser import parser
 
 class RuntimeErrorRobot(Exception):
     pass
@@ -12,195 +12,98 @@ class Interpreter:
         self.maze = maze
         self.vars = {}
         self.funcs = {}
-        self.findexit_path = None  # путь для FINDEXIT
+        self.findexit_path = None
         self.in_findexit = False
 
-    # ───────── run ─────────
-    def run(self):
-        self._exec(self.ast)
+        self.commands = []
+        self._flatten_ast(self.ast)
+        self.step_index = 0
 
-    # ───────── dispatcher ─────────
-    def _exec(self, node):
+    def _flatten_ast(self, node):
+        if node is None:
+            return
         tag = node[0]
-        return getattr(self, f'_ex_{tag}')( *node[1:] )
 
-    # ===== программные узлы =====
-    def _ex_program(self, stmts):
-        for s in stmts: self._exec(s)
+        if tag == 'program':
+            for stmt in node[1]:
+                self._flatten_ast(stmt)
+        elif tag == 'group':
+            for stmt in node[1]:
+                self._flatten_ast(stmt)
+        elif tag == 'move':
+            self.commands.append(('move',))
+        elif tag == 'rotate':
+            self.commands.append(('rotate', node[1]))
+        elif tag == 'for':
+            counter, boundary, step, body = node[1], node[2], node[3], node[4]
+            b = self._eval(boundary) if isinstance(boundary, tuple) else boundary
+            st = self._eval(step) if isinstance(step, tuple) else step
+            i = self.vars.get(counter, 0)
+            if st == 0:
+                return
+            for v in range(i, b, st):
+                self.vars[counter] = v
+                for s in body:
+                    self._flatten_ast(s)
+        elif tag == 'task':
+            name = node[1]
+            params = node[2]
+            body = node[3]
+            self.funcs[name] = (params, body)
+        elif tag == 'do':
+            name = node[1]
+            args = node[2]
+            if name.upper() == 'FINDEXIT':
+                self.findexit_path = self.maze.find_path()
+                self.in_findexit = True
+            if name not in self.funcs:
+                raise RuntimeErrorRobot(f'Нет функции {name}')
+            params, body = self.funcs[name]
+            if len(params) != len(args):
+                raise RuntimeErrorRobot('Число аргументов ≠ числу параметров')
+            backup_vars = self.vars.copy()
+            for p, a in zip(params, args):
+                self.vars[p] = self._eval(a)
+            for s in body:
+                self._flatten_ast(s)
+            self.vars = backup_vars
+        elif tag == 'assign':
+            self.commands.append(('assign', node[1], node[2]))
+        elif tag == 'result':
+            self.commands.append(('result', node[1]))
 
-    def _ex_group(self, stmts):
-        for s in stmts: self._exec(s)
-
-    # ---- VAR ----
-    def _ex_var_decl(self, name, dims, expr):
-        if name in self.vars:
-            raise RuntimeErrorRobot(f'Повторное объявление {name}')
-        self.vars[name] = self._eval(expr)
-
-    # ---- ASSIGN ----
-    def _ex_assign(self, name, expr):
-        if name not in self.vars:
-            raise RuntimeErrorRobot(f'Необъявленная {name}')
-        self.vars[name] = self._eval(expr)
-
-    # ---- MOVE / ROTATE ----
-    def _ex_move(self):
-        if not self.robot.move():
-            raise RuntimeErrorRobot('MOVE failed — стена')
-        self.robot.check_panic()
-
-    def _ex_rotate(self, dir):
-        getattr(self.robot, f'rotate_{dir.lower()}')()
-
-    # ---- FOR ----
-    def _ex_for(self, counter, boundary, step, body):
-        if counter not in self.vars:
-            raise RuntimeErrorRobot(f'Необъявлен счётчик {counter}')
-        b = self._eval(boundary)
-        st = self._eval(step)
-        i = self.vars[counter]
-        while (i < b and st>0) or (i > b and st<0):
-            for s in body: self._exec(s)
-            i += st
-        self.vars[counter] = i
-
-    # ---- SWITCH ----
-    def _ex_switch(self, cond, t_body, f_body):
-        if self._eval(cond):
-            for s in t_body: self._exec(s)
-        elif f_body:
-            for s in f_body: self._exec(s)
-
-    # ---- TASK / DO / GET ----
-    def _ex_task(self, name, params, body):
-        self.funcs[name] = (params, body)
-
-    def _ex_do(self, name, args):
-        if name not in self.funcs:
-            raise RuntimeErrorRobot(f'Нет функции {name}')
-        params, body = self.funcs[name]
-        if len(params)!=len(args):
-            raise RuntimeErrorRobot('Число аргументов ≠ числу параметров')
-        backup = self.vars.copy()
-        for p,a in zip(params,args):
-            self.vars[p] = self._eval(a)
-        for s in body: self._exec(s)
-        self.vars = backup
-
-    def _ex_get(self, name):
-        # в этой версии просто игнор
-        return None
-
-    # ===== выражения =====
     def _eval(self, expr):
         tag = expr[0]
-        return getattr(self, f'_ev_{tag}')( *expr[1:] )
+        if tag == 'int':
+            return expr[1]
+        if tag == 'var':
+            return self.vars.get(expr[1], 0)
+        return 0
 
-    def _ev_int(self, v): return v
-    def _ev_bool(self, v): return v
-    def _ev_var(self, name):
-        if name not in self.vars:
-            raise RuntimeErrorRobot(f'Необъявленная {name}')
-        return self.vars[name]
+    def step(self):
+        if self.step_index >= len(self.commands):
+            return False
+        cmd = self.commands[self.step_index]
+        if cmd[0] == 'move':
+            if not self.robot.move():
+                raise RuntimeErrorRobot("MOVE failed — стена")
+            self.robot.check_panic()
+        elif cmd[0] == 'rotate':
+            dir = cmd[1].lower()
+            if dir == 'left':
+                self.robot.rotate_left()
+            else:
+                self.robot.rotate_right()
+        elif cmd[0] == 'assign':
+            name = cmd[1]
+            val_expr = cmd[2]
+            val = self._eval(val_expr)
+            self.vars[name] = val
+        elif cmd[0] == 'result':
+            pass
+        self.step_index += 1
+        return True
 
-    def _ev_binop(self, op, l, r):
-        a, b = self._eval(l), self._eval(r)
-        if op=='+': return a+b
-        if op=='-': return a-b
-        if op=='*': return a*b
-        if op=='/': return a//b
-        if op=='AND': return a and b
-        raise RuntimeErrorRobot(f'Неизвестный op {op}')
-
-    def _ev_not(self, e): return not self._eval(e)
-
-    # ---- SIZE ----
-    def _ev_size(self, ident):
-        v = self._ev_var(ident)
-        return len(v) if isinstance(v, list) else 0
-
-    # ---- LOGITIZE / DIGITIZE ----
-    def _ev_cast(self, op, ident):
-        v = self._ev_var(ident)
-        if op=='LOGITIZE':
-            return bool(v)
-        return int(v)
-
-    # ---- REDUCE / EXTEND ---- (на скаляры действует без изменений)
-    def _ev_resize(self, op, ident, dims):
-        v = self._ev_var(ident)
-        if not isinstance(v, list):
-            return v
-        dim = self._eval(dims[0]) if dims else len(v)
-        if op=='REDUCE':
-            return v[:dim]
-        else:  # EXTEND
-            return v + [0]*(dim-len(v)) if isinstance(v[0],int) else v+[False]*(dim-len(v))
-
-    # ---- GET ENVIRONMENT ----
-    def _ev_get_environment(self):
-        return self.robot.get_environment()
-
-    # ---- MXTRUE / MXFALSE ----
-    def _ev_mxtrue(self, expr):
-        arr = self._eval(expr)
-        flat = list(self._flatten(arr))
-        return sum(bool(x) for x in flat) > len(flat)//2
-    def _ev_mxfalse(self, expr):
-        return not self._ev_mxtrue(expr)
-
-    # ---- MXEQ / MXLT ... сравнение большинства ----
-    def _ev_mxcomp(self, op, expr):
-        arr = self._eval(expr); flat=list(self._flatten(arr))
-        if op=='MXEQ':   return sum(x==0 for x in flat) > len(flat)//2
-        if op=='MXLT':   return sum(x<0  for x in flat) > len(flat)//2
-        if op=='MXGT':   return sum(x>0  for x in flat) > len(flat)//2
-        if op=='MXLTE':  return sum(x<=0 for x in flat) > len(flat)//2
-        if op=='MXGTE':  return sum(x>=0 for x in flat) > len(flat)//2
-
-    # ---- ELEQ / ELLT ... поэлементно ----
-    def _ev_elecomp(self, op, expr):
-        arr = self._eval(expr)
-        def comp(x):
-            if op=='ELEQ':   return x==0
-            if op=='ELLT':   return x<0
-            if op=='ELGT':   return x>0
-            if op=='ELLTE':  return x<=0
-            if op=='ELGTE':  return x>=0
-        return [comp(x) for x in arr]
-
-    # util для свёртки
-    def _flatten(self, v):
-        if isinstance(v, list):
-            for e in v:
-                yield from self._flatten(e)
-        else:
-            yield v
-
-    def _ex_task(self, name, params, body):
-        self.funcs[name] = (params, body)
-
-    def _ex_do(self, name, args):
-        if name not in self.funcs:
-            raise RuntimeErrorRobot(f'Нет функции {name}')
-        params, body = self.funcs[name]
-        if len(params) != len(args):
-            raise RuntimeErrorRobot('Число аргументов ≠ числу параметров')
-        backup = self.vars.copy()
-        for p, a in zip(params, args):
-            self.vars[p] = self._eval(a)
-
-        # Особенность: если функция — FINDEXIT, считаем и сохраняем путь
-        if name.upper() == "FINDEXIT":
-            self.findexit_path = self.maze.find_path()
-            self.in_findexit = True
-
-        for s in body:
-            self._exec(s)
-        self.vars = backup
-
-    # метод для возврата результата из FINDEXIT (можно расширить)
-    def _ex_get(self, name):
-        if name.upper() == "FINDEXIT" and self.findexit_path:
-            return self.findexit_path
-        return None
+    def run(self):
+        while self.step():
+            pass

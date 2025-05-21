@@ -7,7 +7,7 @@ tokens = [
     'REDUCE', 'EXTEND',
     'MOVE', 'ROTATE', 'LEFT', 'RIGHT',
     'FOR', 'BOUNDARY', 'STEP',
-    'SWITCH', 'TASK', 'DO', 'GET', 'RESULT', 'FINDEXIT',
+    'SWITCH', 'TASK', 'DO', 'GET', 'RESULT',
     'PLEASE', 'THANKS', 'ENVIRONMENT',
     'NOT', 'AND', 'MXTRUE', 'MXFALSE',
     'MXEQ', 'MXLT', 'MXGT', 'MXLTE', 'MXGTE',
@@ -29,7 +29,45 @@ t_COMMA    = r','
 
 t_ignore = ' \t\r'
 
-reserved = {k: k for k in tokens if k.isupper() and k not in ('OCT_INT', 'DEC_INT', 'HEX_INT', 'IDENTIFIER')}
+reserved = {
+    'TRUE': 'TRUE',
+    'FALSE': 'FALSE',
+    'VAR': 'VAR',
+    'SIZE': 'SIZE',
+    'LOGITIZE': 'LOGITIZE',
+    'DIGITIZE': 'DIGITIZE',
+    'REDUCE': 'REDUCE',
+    'EXTEND': 'EXTEND',
+    'MOVE': 'MOVE',
+    'ROTATE': 'ROTATE',
+    'LEFT': 'LEFT',
+    'RIGHT': 'RIGHT',
+    'FOR': 'FOR',
+    'BOUNDARY': 'BOUNDARY',
+    'STEP': 'STEP',
+    'SWITCH': 'SWITCH',
+    'TASK': 'TASK',
+    'DO': 'DO',
+    'GET': 'GET',
+    'RESULT': 'RESULT',
+    'PLEASE': 'PLEASE',
+    'THANKS': 'THANKS',
+    'ENVIRONMENT': 'ENVIRONMENT',
+    'NOT': 'NOT',
+    'AND': 'AND',
+    'MXTRUE': 'MXTRUE',
+    'MXFALSE': 'MXFALSE',
+    'MXEQ': 'MXEQ',
+    'MXLT': 'MXLT',
+    'MXGT': 'MXGT',
+    'MXLTE': 'MXLTE',
+    'MXGTE': 'MXGTE',
+    'ELEQ': 'ELEQ',
+    'ELLT': 'ELLT',
+    'ELGT': 'ELGT',
+    'ELLTE': 'ELLTE',
+    'ELGTE': 'ELGTE',
+}
 
 def t_IDENTIFIER(t):
     r'[A-Za-z_][A-Za-z0-9_]*'

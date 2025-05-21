@@ -15,22 +15,32 @@ def main():
         source_code = f.read()
 
     interpreter = Interpreter(source_code, robot, maze)
-    interpreter.run()
-
-    path = interpreter.findexit_path  # путь, найденный роботом
 
     clock = pygame.time.Clock()
     running = True
+
     while running:
-        screen.fill((255, 255, 255))
-        draw_maze(screen, maze, path, (robot.r, robot.c))
-        pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        clock.tick(30)
+
+        try:
+            has_more = interpreter.step()
+        except RuntimeError as e:
+            print("Ошибка исполнения:", e)
+            running = False
+
+        screen.fill((255, 255, 255))
+        draw_maze(screen, maze, interpreter.findexit_path, (robot.r, robot.c))
+        pygame.display.flip()
+
+        if not has_more:
+            print("Программа выполнена")
+            running = False
+
+        clock.tick(5)  # регулировка скорости анимации
 
     pygame.quit()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
