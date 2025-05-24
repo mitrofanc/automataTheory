@@ -56,26 +56,33 @@ reserved = {
     'NOT': 'NOT',
     'AND': 'AND',
     'MXTRUE': 'MXTRUE',
-    'MXFALSE': 'MXFALSE',
-    'MXEQ': 'MXEQ',
-    'MXLT': 'MXLT',
-    'MXGT': 'MXGT',
-    'MXLTE': 'MXLTE',
-    'MXGTE': 'MXGTE',
-    'ELEQ': 'ELEQ',
-    'ELLT': 'ELLT',
-    'ELGT': 'ELGT',
-    'ELLTE': 'ELLTE',
-    'ELGTE': 'ELGTE',
+    'MXFALSE': 'MXFALSE'
 }
+
+t_MXEQ = r'MXEQ'
+t_MXLT = r'MXLT'
+t_MXGT = r'MXGT'
+t_MXLTE = r'MXLTE'
+t_MXGTE = r'MXGTE'
+
+t_ELEQ = r'ELEQ'
+t_ELLT = r'ELLT'
+t_ELGT = r'ELGT'
+t_ELLTE = r'ELLTE'
+t_ELGTE = r'ELGTE'
+
+t_NOT = r'NOT'
+t_AND = r'AND'
+t_MXTRUE = r'MXTRUE'
+t_MXFALSE = r'MXFALSE'
 
 def t_IDENTIFIER(t):
     r'[A-Za-z_][A-Za-z0-9_]*'
-    t.type = reserved.get(t.value.upper(), 'IDENTIFIER')
+    t.type = reserved.get(t.value, 'IDENTIFIER')
     return t
 
 def t_HEX_INT(t):
-    r'0[xX][0-9a-fA-F]+'
+    r'0x[0-9a-fA-F]+'
     t.value = int(t.value, 16)
     return t
 
@@ -93,16 +100,6 @@ def t_ZERO(t):
     r'0'
     t.value = 0
     t.type = 'DEC_INT'
-    return t
-
-def t_TRUE(t):
-    r'TRUE'
-    t.value = True
-    return t
-
-def t_FALSE(t):
-    r'FALSE'
-    t.value = False
     return t
 
 def t_newline(t):

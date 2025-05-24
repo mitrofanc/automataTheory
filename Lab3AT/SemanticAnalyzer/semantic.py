@@ -1,223 +1,211 @@
-from collections import namedtuple
-
-class Type(namedtuple("Type", ["base", "dims"])):
-    __slots__ = ()
-
-    @property
-    def is_array(self):
-        return len(self.dims) > 0
-
-    def __str__(self):
-        if self.is_array:
-            return f"{self.base}[{', '.join(map(str, self.dims))}]"
-        return self.base
-
-INT = Type('int', ())
-BOOL = Type('bool', ())
-
-def array_of(base_type: Type, dims):
-    return Type(base_type.base, tuple(dims))
-
 class SemanticAnalyzer:
     def __init__(self):
-        self.vars = {}
-        self.funcs = {}
-        self.errors = []
+        self.scopes: list[dict] = [{}] # stack of scopes
+        self.functions: dict = {} # TASK: name -> {'params': [...]}
+        self.in_function: bool = False
 
-    def analyze(self, ast):
-        self._dispatch(ast)
+    # current scope
+    @property
+    def cur(self) -> dict:
+        return self.scopes[-1]
 
-    def _dispatch(self, node):
-        node_type = node[0]
-        method = getattr(self, f"_ana_{node_type}", None)
-        if not method:
-            raise SemanticError(f"Неизвестный тип AST-узла: {node_type}")
-        return method(*node[1:])
+    def enter_scope(self):
+        self.scopes.append({})
 
-    def _ana_program(self, statements):
-        for st in statements:
-            self._dispatch(st)
+    def leave_scope(self):
+        self.scopes.pop()
 
-    def _ana_group(self, statements):
-        for st in statements:
-            self._dispatch(st)
+    def declare(self, name: str, info: dict):
+        if name in self.cur:
+            raise SemanticError(f"Variable '{name}' already declared in this scope")
+        self.cur[name] = info
 
-    def _ana_var_decl(self, name, dims_ast, expr_ast):
-        if name in self.vars:
-            raise SemanticError(f"Повторное объявление переменной «{name}»")
+    def lookup(self, name: str) -> dict:
+        if self.in_function:
+            if name in self.cur:
+                return self.cur[name]
+            raise SemanticError(f"Variable '{name}' not declared in function scope")
 
-        dims = []
-        for d in dims_ast:
-            t = self._dispatch(d)
-            if t.base != 'int' or t.is_array:
-                raise SemanticError("Размерность массива должна быть скаляром int")
-            dims.append(-1)
+        for scope in reversed(self.scopes):
+            if name in scope:
+                return scope[name]
+        raise SemanticError(f"Variable '{name}' not declared")
 
-        value_type = self._dispatch(expr_ast)
+    def analyze(self, node):
+        nodetype = node[0]
+        method = getattr(self, f'analyze_{nodetype}', self.generic_analyze)
+        return method(node)
 
-        if dims and not value_type.is_array:
-            raise SemanticError("Нельзя инициализировать массив скалярным значением")
+    def generic_analyze(self, node):
+        raise SemanticError(f"No semantic rule for node type {node[0]}")
 
-        declared_type = array_of(value_type, dims) if dims else value_type
-        self.vars[name] = declared_type
-        return declared_type
+    def literal_type(self, node):
+        v = node[1]
+        return 'bool' if isinstance(v, bool) else 'int'
 
-    def _ana_assign(self, name, expr_ast):
-        if name not in self.vars:
-            raise SemanticError(f"Необъявленная переменная «{name}»")
-        lhs_type = self.vars[name]
-        rhs_type = self._dispatch(expr_ast)
-        if lhs_type.base != rhs_type.base or lhs_type.is_array != rhs_type.is_array:
-            raise SemanticError(f"Несовместимые типы при присваивании {lhs_type} ← {rhs_type}")
-        return lhs_type
+    def check_dimensions(self, name: str, dims: list):
+        for d in dims:
+            if self.analyze(d) != 'int':
+                raise SemanticError(f"Dimension in '{name}' must be integer")
+            if d[0] == 'literal' and d[1] <= 0:
+                raise SemanticError(f"Dimension in '{name}' must be positive")
 
-    def _ana_move(self):
-        return BOOL
+    def analyze_var_declaration(self, node):
+        _, name, dims, lit = node
+        self.check_dimensions(name, dims)
+        self.declare(name, {
+            'type': self.literal_type(lit),
+            'dimensions': dims
+        })
 
-    def _ana_rotate(self, direction):
-        if direction not in ('LEFT', 'RIGHT'):
-            raise SemanticError("ROTATE допускает только LEFT или RIGHT")
-        return BOOL
+    # name = expr
+    def analyze_assignment(self, node):
+        _, name, expr = node
+        var = self.lookup(name)
+        expr_type = self.analyze(expr)
+        if var['type'] != expr_type:
+            raise SemanticError(f"Type mismatch on assignment to '{name}'")
 
-    def _ana_for(self, counter, boundary_ast, step_ast, body):
-        if counter not in self.vars or self.vars[counter].base != 'int':
-            raise SemanticError(f"Cчётчик цикла «{counter}» должен быть объявленным int")
-        b_type = self._dispatch(boundary_ast)
-        s_type = self._dispatch(step_ast)
-        if b_type.base != 'int' or s_type.base != 'int':
-            raise SemanticError("BOUNDARY и STEP цикла должны быть int")
-        for st in body:
-            self._dispatch(st)
-
-    def _ana_switch(self, cond_ast, true_body, false_body):
-        cond_type = self._dispatch(cond_ast)
-        if cond_type.base != 'bool':
-            raise SemanticError("Условие в SWITCH должно быть bool")
-        for st in true_body:
-            self._dispatch(st)
-        if false_body:
-            for st in false_body:
-                self._dispatch(st)
-
-    def _ana_task(self, name, params, body):
-        if name in self.funcs:
-            raise SemanticError(f"Функция «{name}» уже объявлена")
-        self.funcs[name] = (params, body)
-        prev_vars = self.vars.copy()
-        for p in params:
-            self.vars[p] = INT
-        for st in body:
-            self._dispatch(st)
-        self.vars = prev_vars
-
-    def _ana_do(self, name, args):
-        if name not in self.funcs:
-            raise SemanticError(f"Вызов несуществующей функции «{name}»")
-        params, _ = self.funcs[name]
-        if len(params) != len(args):
-            raise SemanticError(f"Аргументов ({len(args)}) не совпадает с параметрами ({len(params)})")
-        for arg in args:
-            self._dispatch(arg)
-        return INT
-
-    def _ana_get(self, name):
-        if name not in self.funcs:
-            raise SemanticError(f"GET неизвестной функции «{name}»")
-        return INT
-
-    def _ana_result(self, name):
-        if name not in self.vars:
-            raise SemanticError(f"Необъявленная переменная в RESULT: {name}")
-
-    def _ana_binop(self, op, left_ast, right_ast):
-        lt = self._dispatch(left_ast)
-        rt = self._dispatch(right_ast)
-        if op in ('+', '-', '*', '/'):
-            self._assert_scalar_int(lt)
-            self._assert_scalar_int(rt)
-            return INT
+    def analyze_binop(self, node):
+        _, op, l, r = node
+        lt, rt = self.analyze(l), self.analyze(r)
+        if op in ['+', '-', '*', '/']:
+            if (lt, rt) != ('int', 'int'):
+                raise SemanticError(f"Operator '{op}' needs integer operands")
+            return 'int'
         if op == 'AND':
-            self._assert_scalar_bool(lt)
-            self._assert_scalar_bool(rt)
-            return BOOL
-        raise SemanticError(f"Неизвестный бинарный оператор {op}")
+            if (lt, rt) != ('bool', 'bool'):
+                raise SemanticError("Operator AND needs boolean operands")
+            return 'bool'
+        return None
 
-    def _ana_not(self, expr_ast):
-        t = self._dispatch(expr_ast)
-        self._assert_scalar_bool(t)
-        return BOOL
+    def analyze_literal(self, node):
+        return self.literal_type(node)
 
-    def _ana_mxtrue(self, expr_ast):
-        t = self._dispatch(expr_ast)
-        self._assert_array_bool(t)
-        return BOOL
+    def analyze_expression(self, node):
+        val = node[1]
+        if isinstance(val, str):
+            return self.lookup(val)['type']
+        return self.analyze(val)
 
-    def _ana_mxfalse(self, expr_ast):
-        t = self._dispatch(expr_ast)
-        self._assert_array_bool(t)
-        return BOOL
+    # SIZE(name)
+    def analyze_size_operator(self, node):
+        _, name = node
+        self.lookup(name)
+        return 'int'
 
-    def _ana_mxcomp(self, op, expr_ast):
-        t = self._dispatch(expr_ast)
-        self._assert_array_int(t)
-        return BOOL
+    # REDUCE/EXTEND
+    def analyze_size_change(self, node):
+        _, op, name, dims = node
+        self.lookup(name)
+        self.check_dimensions(name, dims)
+        return 'int'
 
-    def _ana_elecomp(self, op, expr_ast):
-        t = self._dispatch(expr_ast)
-        self._assert_array_int(t)
-        return t
+    # name[d1,d2,...]
+    def analyze_array_access(self, node):
+        _, name, idx = node
+        info = self.lookup(name)
+        if len(idx) != len(info['dimensions']):
+            raise SemanticError(f"Index count mismatch for '{name}'")
+        for d in idx:
+            if self.analyze(d) != 'int':
+                raise SemanticError(f"Index for '{name}' must be integer")
+        return info['type']
 
-    def _ana_cast(self, op, ident):
-        if ident not in self.vars:
-            raise SemanticError(f"Преобразование неизвестной переменной «{ident}»")
-        t = self.vars[ident]
-        if op == 'LOGITIZE':
-            return array_of(BOOL, t.dims)
-        if op == 'DIGITIZE':
-            return array_of(INT, t.dims)
-        raise SemanticError("Неизвестный оператор преобразования")
+    # NOT
+    def analyze_not(self, node):
+        if self.analyze(node[1]) != 'bool':
+            raise SemanticError("NOT requires boolean operand")
+        return 'bool'
 
-    def _ana_resize(self, op, ident, dims_ast):
-        if ident not in self.vars:
-            raise SemanticError(f"REDUCE/EXTEND неизвестной переменной «{ident}»")
-        base_t = self.vars[ident]
-        dims = tuple(-1 for _ in dims_ast) if dims_ast else base_t.dims
-        return array_of(base_t, dims)
+    # AND
+    def analyze_and(self, node):
+        return self.analyze_binop(node)
 
-    def _ana_size(self, ident):
-        if ident not in self.vars:
-            raise SemanticError(f"SIZE неизвестной переменной «{ident}»")
-        return INT
+    # MXTRUE/MXFALSE
+    def analyze_mxtrue(self, node):
+        return self.analyze_not(node)
 
-    def _ana_get_environment(self):
-        return array_of(BOOL, (-1, -1, -1))
+    # MXFALSE
+    def analyze_mxfalse(self, node):
+        return self.analyze_not(node)
 
-    def _ana_int(self, value):
-        return INT
+    def analyze_comparison_zero(self, node):
+        _, op, expr = node
+        if self.analyze(expr) != 'int':
+            raise SemanticError(f"{op} requires integer operand")
+        return 'bool'
 
-    def _ana_bool(self, value):
-        return BOOL
+    # FOR counter BOUNDARY expr STEP counter2 block
+    def analyze_for_loop(self, node):
+        _, ctr, bound, step, body = node
+        if self.lookup(ctr)['type'] != 'int' or self.lookup(step)['type'] != 'int':
+            raise SemanticError("Loop var and step must be integer")
+        self.analyze(bound)
+        for st in body:
+            self.analyze(st)
 
-    def _ana_var(self, name):
-        if name not in self.vars:
-            raise SemanticError(f"Использование необъявленной переменной «{name}»")
-        return self.vars[name]
+    # SWITCH expr TRUE/FALSE block [FALSE/TRUE block]
+    def analyze_switch(self, node):
+        _, cond, choice, block, elseblock = node
+        if self.analyze(cond) != 'bool':
+            raise SemanticError("Switch condition must be boolean")
+        for st in block: self.analyze(st)
+        if elseblock:
+            for st in elseblock[1]: self.analyze(st)
 
-    def _assert_scalar_int(self, t):
-        if not (t.base == 'int' and not t.is_array):
-            raise SemanticError("Ожидался скаляр int")
+    def analyze_move(self, node):
+        return None
 
-    def _assert_scalar_bool(self, t):
-        if not (t.base == 'bool' and not t.is_array):
-            raise SemanticError("Ожидался скаляр bool")
+    def analyze_rotate_left(self, node):
+        return None
 
-    def _assert_array_int(self, t):
-        if not (t.base == 'int' and t.is_array):
-            raise SemanticError("Ожидался массив int")
+    def analyze_rotate_right(self, node):
+        return None
 
-    def _assert_array_bool(self, t):
-        if not (t.base == 'bool' and t.is_array):
-            raise SemanticError("Ожидался массив bool")
+    def analyze_get_environment(self, node):
+        return 'bool'
+
+    # TASK name params block RESULT var
+    def analyze_task_function(self, node):
+        _, fname, params, body, ret = node
+        if len(self.scopes) != 1 or self.scopes[-1] is not self.scopes[0]:
+            raise SemanticError("TASK can only be declared at global scope")
+
+        if fname in self.functions:
+            raise SemanticError(f"Function '{fname}' already declared")
+
+        self.functions[fname] = {'params': params}
+
+        self.enter_scope()
+        for p in params:
+            self.declare(p, {'type': 'unknown', 'dimensions': []})
+
+        for stmt in body:
+            self.analyze(stmt)
+
+        if ret[0] != 'return':
+            raise SemanticError("Missing RESULT in function")
+
+        self.leave_scope()
+
+    # DO name(args)
+    def analyze_function_call(self, node):
+        _, fname, args = node
+        if fname not in self.functions:
+            raise SemanticError(f"Function '{fname}' not declared")
+
+        sig = self.functions[fname]['params']
+        if len(args) != len(sig):
+            raise SemanticError(f"Argument count mismatch in call '{fname}'")
+        for a in args:
+            self.analyze(a)
+
+    # GET name (result)
+    def analyze_get_function_result(self, node):
+        _, fname = node
+        if fname not in self.functions:
+            raise SemanticError(f"Function '{fname}' not declared")
 
 class SemanticError(Exception):
     pass
