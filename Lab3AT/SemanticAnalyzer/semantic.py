@@ -30,23 +30,12 @@ class SemanticAnalyzer:
         raise SemanticError(f"Variable '{name}' not declared")
 
     def analyze(self, node):
-        """
-        Основной метод семантического анализа.
-        node может быть:
-          - str          → идентификатор или ключевое слово
-          - int/bool     → «сырой» литерал
-          - list         → список узлов AST (верхний уровень или блок)
-          - tuple        → узел с тегом node[0]
-        """
-        # --- 1) строка: идентификатор или токен-оператор ---
         if isinstance(node, str):
             for scope in reversed(self.scopes):
                 if node in scope:
                     return scope[node]['type']
-            # токен-оператор (ELGT, MXGT и т.п.) — возвращаем int-заглушку
             return 'int'
 
-        # --- 2) литерал Python —
         if isinstance(node, bool):
             return 'bool'
         if isinstance(node, int):

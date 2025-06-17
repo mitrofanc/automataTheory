@@ -1,35 +1,35 @@
-TASK FINDEXIT () (
+task FINDEXIT () (
 
-    VAR arr1 [5] = [-2, -1, 0, 1, 2]
-    VAR arr2 [4] = [0, 0, 0, 1]
-    VAR logic [3] = [TRUE, FALSE, TRUE]
+    var arr1 [5] = [-2, -1, 0, 1, 2]
+    var arr2 [4] = [0, 0, 0, 1]
+    var logic [3] = [TRUE, FALSE, TRUE]
 
-    VAR mx_gt  = MXGT  (arr1)
-    VAR mx_lt  = MXLT  (arr1)
-    VAR mx_eq  = MXEQ  (arr2)
-    VAR mx_gte = MXGTE (arr2)
-    VAR mx_lte = MXLTE (arr1)
+    var mx_gt  = MXGT  (arr1)
+    var mx_lt  = MXLT  (arr1)
+    var mx_eq  = MXEQ  (arr2)
+    var mx_gte = MXGTE (arr2)
+    var mx_lte = MXLTE (arr1)
 
-    VAR el_gt  = ELGT  (arr1)
-    VAR el_eq  = ELEQ  (arr2)
+    var el_gt  = ELGT  (arr1)
+    var el_eq  = ELEQ  (arr2)
 
-    VAR mx_tr  = MXTRUE  logic
-    VAR mx_fl  = MXFALSE logic
+    var mx_tr  = MXTRUE  logic
+    var mx_fl  = MXFALSE logic
 
-    VAR env = GET ENVIRONMENT
-    VAR front_is_free = env[2,2,1]
+    var env = get environment
+    var front_is_free = env[2,2,1]
 
-    SWITCH front_is_free TRUE (
-        MOVE
+    switch front_is_free TRUE (
+        move
     ) FALSE (
-        ROTATE RIGHT
+        rotate right
     )
 
-    VAR i = [1]
-    VAR s = [1]
-    FOR i BOUNDARY [4] STEP s (
-        SWITCH mx_gt TRUE ( ROTATE LEFT ) FALSE ( ROTATE RIGHT )
+    var i = [1]
+    var s = [1]
+    for i boundary 4 step s (
+        switch mx_gt TRUE ( rotate left ) FALSE ( rotate right )
     )
 
-    RESULT 0
+    result 0
 )
