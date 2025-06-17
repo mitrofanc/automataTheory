@@ -1,0 +1,69 @@
+task FINDEXIT () (
+    var a = [1]
+    var b [3] = [1, 2, 3]
+    var c = TRUE
+
+    var s = SIZE(b)
+
+    var log_b = logitize b
+    var dig_c = digitize c
+
+    var sum1 = a + [9]
+    var oct = [012]
+    var hex = [0xA]
+
+    rotate right
+    for a boundary s step dig_c (
+        move
+    )
+
+    for a boundary sum1 step b[1] (
+        rotate right
+        move
+        move
+    )
+
+    for a boundary oct step 1 (
+        rotate left
+        move
+        move
+    )
+
+    rotate right
+
+    for a boundary hex step 1 (
+        move
+        move
+        rotate right
+    )
+
+    reduce b [2]
+
+    var i = b[1]
+
+    for i boundary size(b) step 1 (
+        move
+    )
+
+    extend b [5]
+
+    for i boundary size(b) step 2 (
+        move
+    )
+
+    do sum_func a b[3]
+
+    var res_sum = get sum_func
+
+    for i boundary res_sum step 1 (
+        rotate right
+        move
+        move
+    )
+
+    result 0
+)
+
+TASK sum_func (a, b) (
+    result a + b
+)

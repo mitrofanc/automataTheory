@@ -1,5 +1,4 @@
 import json
-from collections import deque
 
 class Maze:
     def __init__(self, grid, start, exits):
@@ -21,25 +20,6 @@ class Maze:
             nr, nc = r + dr, c + dc
             if self.is_free(nr, nc):
                 yield (nr, nc)
-
-    # def find_path(self):
-    #     """Поиск пути от start к ближайшему выходу BFS"""
-    #     queue = deque([self.start])
-    #     came_from = {self.start: None}
-    #
-    #     while queue:
-    #         current = queue.popleft()
-    #         if current in self.exits:
-    #             path = []
-    #             while current:
-    #                 path.append(current)
-    #                 current = came_from[current]
-    #             return list(reversed(path))
-    #         for nxt in self.neighbors(*current):
-    #             if nxt not in came_from:
-    #                 came_from[nxt] = current
-    #                 queue.append(nxt)
-    #     return None
 
     @classmethod
     def load_from_file(cls, filepath):

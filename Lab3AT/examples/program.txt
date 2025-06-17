@@ -1,13 +1,8 @@
-MOVE
-MOVE
-ROTATE RIGHT
-VAR counter = 0
-
-TASK FINDEXIT
-    MOVE
-    SWITCH GET ENVIRONMENT TRUE
-        MOVE
-    FALSE
-        ROTATE LEFT
-
-DO FINDEXIT
+TASK FINDEXIT () (
+    var a = [TRUE, TRUE, TRUE]
+    rotate right
+    switch (MXTRUE a) TRUE (
+        move
+    )
+    result 0
+)

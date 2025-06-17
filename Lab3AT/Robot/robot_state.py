@@ -50,7 +50,17 @@ class RobotState:
 
     def check_panic(self):
         if self.panic_counter > self.hysteresis:
-            raise RuntimeError("PANIC: робот слишком долго не может продвинуться!")
+            from interpreter import RuntimeErrorRobot
+            raise RuntimeErrorRobot("PANIC: робот слишком долго не может продвинуться!")
 
     def __repr__(self):
         return f'<Robot r={self.r} c={self.c} dir={self.facing}>'
+
+    @property
+    def at_exit(self) -> bool:
+        """
+        True, если текущие координаты совпадают
+        хотя бы с одной точкой списка self.maze.exits
+        (labyrinth.json хранит выходы).
+        """
+        return [self.r, self.c] in getattr(self.maze, "exits", [])

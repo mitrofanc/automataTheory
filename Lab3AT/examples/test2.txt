@@ -1,0 +1,35 @@
+TASK FINDEXIT () (
+
+    VAR arr1 [5] = [-2, -1, 0, 1, 2]
+    VAR arr2 [4] = [0, 0, 0, 1]
+    VAR logic [3] = [TRUE, FALSE, TRUE]
+
+    VAR mx_gt  = MXGT  (arr1)
+    VAR mx_lt  = MXLT  (arr1)
+    VAR mx_eq  = MXEQ  (arr2)
+    VAR mx_gte = MXGTE (arr2)
+    VAR mx_lte = MXLTE (arr1)
+
+    VAR el_gt  = ELGT  (arr1)
+    VAR el_eq  = ELEQ  (arr2)
+
+    VAR mx_tr  = MXTRUE  logic
+    VAR mx_fl  = MXFALSE logic
+
+    VAR env = GET ENVIRONMENT
+    VAR front_is_free = env[2,2,1]
+
+    SWITCH front_is_free TRUE (
+        MOVE
+    ) FALSE (
+        ROTATE RIGHT
+    )
+
+    VAR i = [1]
+    VAR s = [1]
+    FOR i BOUNDARY [4] STEP s (
+        SWITCH mx_gt TRUE ( ROTATE LEFT ) FALSE ( ROTATE RIGHT )
+    )
+
+    RESULT 0
+)
