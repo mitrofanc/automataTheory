@@ -1,0 +1,43 @@
+task FINDEXIT () (
+    var n = 10
+
+    do fact n
+
+    var i = 1
+    var res_fact = get fact
+
+    do fib n
+    var res_fib = get fib
+
+    result 0
+)
+
+TASK fact (x) (
+    var base = 1
+    SWITCH (ELLTE (x - base)) TRUE (
+        result 1
+    ) FALSE (
+        do fact (x - 2)
+        var sub = get fact
+        result x * sub
+    )
+)
+
+TASK fib (n) (
+    SWITCH (ELEQ (n) ) TRUE (
+        result 0
+    ) FALSE (
+        SWITCH (ELEQ (n - 1)) TRUE (
+            result 1
+        ) FALSE (
+            do fib (n - 1)
+            var prev1 = get fib
+
+            do fib (n - 2)
+            var prev2 = get fib
+
+            var sum = prev1 + prev2
+            result sum
+        )
+    )
+)
