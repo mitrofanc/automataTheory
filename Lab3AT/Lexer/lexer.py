@@ -1,7 +1,6 @@
 import ply.lex as lex
 
 reserved = {
-    # булевы константы
     'TRUE':  'BOOL_LITERAL',
     'FALSE': 'BOOL_LITERAL',
 
