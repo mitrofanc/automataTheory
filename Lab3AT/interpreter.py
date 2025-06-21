@@ -23,7 +23,8 @@ class Interpreter:
             b *= len(a)
         if len(a) != len(b):
             raise RuntimeErrorRobot("Inconsistent array dimensions")
-        return [op(x, y) for x, y in zip(a, b)]
+        res = [op(x, y) for x, y in zip(a, b)]
+        return res[0] if len(res) == 1 else res
 
     def _majority(self, arr, predicate):
         data = self._flatten(arr)
@@ -78,11 +79,6 @@ class Interpreter:
             func_name = expr[1]
             return self.vars.get(f"res_{func_name}")
 
-        # if tag == 'get_environment':
-        #     env = self.robot.get_environment()
-        #     self.vars['lastEnv'] = env
-        #     return env
-
         if tag == 'uminus':
             val = self._eval(expr[1])
             arr = self._as_array(val)
@@ -101,7 +97,7 @@ class Interpreter:
         if tag == 'array_literal':
             return [self._eval(e) if isinstance(e, tuple) else e for e in expr[1]]
 
-        if tag == 'array_access': # todo понять если надо
+        if tag == 'array_access':
             name, indices_raw = expr[1], expr[2]
             arr = self.vars.get(name)
             if arr is None:
@@ -181,6 +177,27 @@ class Interpreter:
             }
             return [mapping[op_sym](x) for x in data]
 
+        if tag == 'elementwise_comparison_two':
+            op_sym, left_expr, right_expr = expr[1], expr[2], expr[3]
+
+            left_vals = self._flatten(self._eval(left_expr))
+            right_vals = self._flatten(self._eval(right_expr))
+
+            # broadcast
+            if len(left_vals) == 1: left_vals *= len(right_vals)
+            if len(right_vals) == 1: right_vals *= len(left_vals)
+            if len(left_vals) != len(right_vals):
+                raise RuntimeErrorRobot("Array length mismatch in elementwise comparison")
+
+            cmp = {
+                'ELEQ': lambda a, b: a == b,
+                'ELLT': lambda a, b: a < b,
+                'ELGT': lambda a, b: a > b,
+                'ELLTE': lambda a, b: a <= b,
+                'ELGTE': lambda a, b: a >= b,
+            }[op_sym]
+            return [cmp(a, b) for a, b in zip(left_vals, right_vals)]
+
         if tag == 'mxtrue':
             arr = self._eval(expr[1])
             return self._majority(arr, lambda x: bool(x))
@@ -214,8 +231,10 @@ class Interpreter:
             name, dims_raw, expr = node[1], node[2], node[3]
 
             raw_val = self._eval(expr)
-            value = raw_val if isinstance(raw_val, list) else [raw_val]
-
+            if dims_raw:
+                value = raw_val if isinstance(raw_val, list) else [raw_val]
+            else:
+                value = raw_val
             declared_shape = None
             if dims_raw:
                 declared_shape = [self._eval(d) for d in dims_raw]
@@ -289,6 +308,8 @@ class Interpreter:
         if tag == 'switch':
             cond_expr, true_literal, true_block, else_clause = node[1], node[2], node[3], node[4]
             cond_val = self._eval(cond_expr)
+            if isinstance(cond_val, list) and len(cond_val) == 1:
+                cond_val = cond_val[0]
             if isinstance(true_literal, bool):
                 main_bool = true_literal
             else:
@@ -324,7 +345,7 @@ class Interpreter:
             if len(params) != len(args):
                 raise RuntimeErrorRobot("Number of arguments must match number of parameters")
 
-            backup = self.vars.copy()  # сохраним глобалы
+            backup = self.vars.copy()
             for p, a in zip(params, args):
                 self.vars[p] = self._eval(a)
 
@@ -342,12 +363,12 @@ class Interpreter:
             val = self._eval(node[1])
             if self.current_func is None:
                 raise RuntimeErrorRobot("Result cannot be outside of function")
+            print(f"Result {self.current_func}: {val}")
             self.vars[f"res_{self.current_func}"] = val
             return
 
         if tag == 'get_function_result':
             name = node[1]
-            # Для простоты результат функции хранится в vars[f"res_{name}"]
             return self.vars.get(f"res_{name}")
 
         if tag in {'binop',

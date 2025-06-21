@@ -1,8 +1,0 @@
-TASK FINDEXIT () (
-    var a = [TRUE, TRUE, TRUE]
-    rotate right
-    switch (MXTRUE a) TRUE (
-        move
-    )
-    result 0
-)

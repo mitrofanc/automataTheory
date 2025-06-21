@@ -1,35 +1,31 @@
 task FINDEXIT () (
+    var maxSteps = [500]
+    var st       = [1]
+    var cnt      = [0]
 
-    var arr1 [5] = [-2, -1, 0, 1, 2]
-    var arr2 [4] = [0, 0, 0, 1]
-    var logic [3] = [TRUE, FALSE, TRUE]
+    for cnt boundary maxSteps step st (
+        var env = get environment
 
-    var mx_gt  = MXGT  (arr1)
-    var mx_lt  = MXLT  (arr1)
-    var mx_eq  = MXEQ  (arr2)
-    var mx_gte = MXGTE (arr2)
-    var mx_lte = MXLTE (arr1)
+        // Если стоим на выходе – сообщить количество шагов
+        switch env[2,2,2] TRUE ( result cnt )
 
-    var el_gt  = ELGT  (arr1)
-    var el_eq  = ELEQ  (arr2)
+        // Левый-рулевик (wall-following)
+        var wallLeft  = env[2,1,1]          // слева стена?
+        var wallFront = env[1,2,1]          // спереди стена?
 
-    var mx_tr  = MXTRUE  logic
-    var mx_fl  = MXFALSE logic
+        switch NOT wallLeft TRUE (          // слева свободно
+            rotate left
+            move
+        ) FALSE (
+            switch NOT wallFront TRUE (     // спереди свободно
+                move
+            ) FALSE (                       // тупик – поворот направо
+                rotate right
+            )
+        )
 
-    var env = get environment
-    var front_is_free = env[2,2,1]
-
-    switch front_is_free TRUE (
-        move
-    ) FALSE (
-        rotate right
+        cnt = cnt + [1]                     // шаг учёл
     )
 
-    var i = [1]
-    var s = [1]
-    for i boundary 4 step s (
-        switch mx_gt TRUE ( rotate left ) FALSE ( rotate right )
-    )
-
-    result 0
+    result 0                                // не нашли выход ≤ maxSteps
 )

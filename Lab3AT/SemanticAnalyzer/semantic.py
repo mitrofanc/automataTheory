@@ -230,6 +230,15 @@ class SemanticAnalyzer:
     def analyze_result(self, node):
         return self.analyze(node[1])
 
+    def _node_contains_result(self, node) -> bool:
+        if isinstance(node, tuple):
+            if node and node[0] == 'result':
+                return True
+            return any(self._node_contains_result(child) for child in node[1:])
+        if isinstance(node, list):
+            return any(self._node_contains_result(child) for child in node)
+        return False
+
     def analyze_task_function(self, node):
         _, fname, params, body = node
 
@@ -248,12 +257,7 @@ class SemanticAnalyzer:
         for p in params:
             self.declare(p, { 'type': 'unknown', 'dimensions': [] })
 
-        seen_result = False
-        for stmt in body:
-            if isinstance(stmt, tuple) and stmt[0] == 'result':
-                seen_result = True
-            self.analyze(stmt)
-        if not seen_result:
+        if not self._node_contains_result(body):
             raise SemanticError("Missing RESULT in function")
 
         self.leave_scope()
@@ -280,3 +284,8 @@ class SemanticAnalyzer:
             raise SemanticError("Unary minus only for integers")
         return 'int'
 
+    def analyze_elementwise_comparison_two(self, node):
+        _, op, left, right = node
+        if self.analyze(left) != 'int' or self.analyze(right) != 'int':
+            raise SemanticError(f"{op} expects integer operands")
+        return 'bool'      # result is an array of bools

@@ -13,7 +13,7 @@ def main() -> None:
     pygame.init()
 
     base_dir = os.path.dirname(__file__)
-    maze_path = os.path.join(base_dir, "examples", "maze2.json")
+    maze_path = os.path.join(base_dir, "examples", "maze.json")
     maze = Maze.load_from_file(maze_path)
 
     screen = pygame.display.set_mode((maze.width * TILE, maze.height * TILE))
@@ -37,7 +37,7 @@ def main() -> None:
         pygame.display.flip()
         time.sleep(0.10)
 
-    prog_path = os.path.join(base_dir, "examples", "find_exit.txt")
+    prog_path = os.path.join(base_dir, "examples", "recursion_test.txt")
     with open(prog_path, encoding="utf-8") as f:
         source = f.read()
 

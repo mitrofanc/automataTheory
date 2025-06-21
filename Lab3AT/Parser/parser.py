@@ -108,6 +108,15 @@ def p_elementwise_comparison_with_zero_pre(p):
                   | ELGTE LPAREN expression RPAREN"""
     p[0] = ('elementwise_comparison_zero', p[1], p[3])
 
+def p_elementwise_comparison_two_args(p):
+    """expression : ELEQ LPAREN expression RPAREN LPAREN expression RPAREN
+                  | ELLT LPAREN expression RPAREN LPAREN expression RPAREN
+                  | ELGT LPAREN expression RPAREN LPAREN expression RPAREN
+                  | ELLTE LPAREN expression RPAREN LPAREN expression RPAREN
+                  | ELGTE LPAREN expression RPAREN LPAREN expression RPAREN"""
+    #                op           e1                  e2
+    p[0] = ('elementwise_comparison_two', p[1], p[3], p[6])
+
 def p_expression_uminus(p):
     """expression : MINUS expression %prec UMINUS"""
     p[0] = ('uminus', p[2])
